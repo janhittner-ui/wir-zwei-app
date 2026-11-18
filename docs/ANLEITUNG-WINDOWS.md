@@ -113,6 +113,8 @@ Die E-Mail-Vorlagen unter „Emails“ musst du nicht anfassen. Vor der Veröffe
    notepad .env
    ```
 4. Die beiden Werte eintragen, speichern, Editor schließen.
+   **Wichtig:** Jeden Wert **vollständig** mit dem Kopieren-Knopf in Supabase kopieren und einfügen, nicht abtippen und nichts abkürzen.
+   Die Zeile muss so ähnlich aussehen: `EXPO_PUBLIC_SUPABASE_URL=https://abcdefghijklmnop.supabase.co` (ohne „…“, ohne Leerzeichen, ohne Anführungszeichen).
 
 Den **Secret key** oder **service_role key** bitte niemals in die App oder in die `.env` eintragen.
 
