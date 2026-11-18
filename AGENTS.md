@@ -48,3 +48,4 @@ Docs: https://docs.expo.dev/eas/index.md
 - Optionale Ladevorgänge (Zusatzinfos) in try/catch, sie dürfen Hauptdaten nie blockieren.
 - Datenschutz: keine Tracking-, Analyse- oder Werbe-Pakete. Nur der publishable key in der App.
 - `docs.expo.dev` ist aus der Cloud-Umgebung nicht erreichbar; Paketversionen aus `node_modules/expo/bundledNativeModules.json` nehmen (`npx expo install` braucht Netz zu api.expo.dev).
+- Design: an iOS orientieren (Apple Human Interface Guidelines), einfach bedienbar, schlicht und ansprechend. Native Muster bevorzugen (Wischen zum Löschen, Aktionsblätter, Systempicker).
