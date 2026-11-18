@@ -74,6 +74,7 @@ function Root() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="termin" options={{ presentation: 'modal' }} />
           <Stack.Screen name="geburtstag" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="notiz" options={{ presentation: 'modal' }} />
           <Stack.Screen name="einstellungen" options={{ presentation: 'modal' }} />
         </Stack.Protected>
       </Stack>

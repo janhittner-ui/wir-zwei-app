@@ -133,6 +133,22 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(A, `update public.events set created_by = $2 where id = $1`, /immutable_column/, [ev.id, B]);
   });
 
+  test('Notizen: Paar teilt sie, "zuletzt von" stimmt, Fremde sehen nichts', async () => {
+    const [n] = await as<{ id: string; updated_by: string }>(A, `insert into public.notes (couple_id, title, body, color) values ($1, 'WLAN', 'Gast: sonne123', 'n2') returning id, updated_by`, [couple]);
+    assert.equal(n.updated_by, A);
+    const [u] = await as<{ updated_by: string; body: string }>(B, `update public.notes set body = 'Gast: mond456' where id = $1 returning updated_by, body`, [n.id]);
+    assert.equal(u.updated_by, B);
+    const [spoof] = await as<{ updated_by: string }>(A, `update public.notes set updated_by = $2 where id = $1 returning updated_by`, [n.id, C]);
+    assert.equal(spoof.updated_by, A);
+    await fails(A, `insert into public.notes (couple_id, body, color) values ($1, 'x', 'lila')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.notes (couple_id, body) values ($1, '   ')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.notes (couple_id, body) values ($1, $2)`, /check constraint/, [couple, 'x'.repeat(5001)]);
+    assert.equal((await as(C, 'select * from public.notes')).length, 0);
+    await fails(C, `insert into public.notes (couple_id, body) values ($1, 'Einbruch')`, /row-level security/, [couple]);
+    assert.equal((await as(C, `update public.notes set body = 'x' returning id`)).length, 0);
+    await fails(null, 'select * from public.notes', /permission denied/);
+  });
+
   test('Geburtstage: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
     await as(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'Oma Helga', 3, 14, 1941)`, [couple]);
     await as(B, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Schaltjahr-Kind', 2, 29)`, [couple]);
@@ -182,7 +198,7 @@ describe('Datenbank (strenge Prüfung)', () => {
     const left = await db.query<{ n: number }>(`select
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
-      (select count(*) from public.birthdays) +
+      (select count(*) from public.birthdays) + (select count(*) from public.notes) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

@@ -7,7 +7,7 @@ import { AppState } from 'react-native';
 
 import { createStore } from './index';
 import type { DataStore } from './store';
-import type { Birthday, CalendarEvent, Couple, Profile, Session, ShoppingItem } from './types';
+import type { Birthday, CalendarEvent, Note, Couple, Profile, Session, ShoppingItem } from './types';
 
 type Status = 'booting' | 'signedOut' | 'loading' | 'needsProfile' | 'needsCouple' | 'ready' | 'error';
 
@@ -99,7 +99,7 @@ export function useApp(): AppData {
 }
 
 /** Lädt eine Liste, hört auf Live-Änderungen und lädt beim Zurückkehren in die App neu. */
-function useLiveList<T>(table: 'events' | 'shopping' | 'birthdays', fetcher: (s: DataStore) => Promise<T[]>) {
+function useLiveList<T>(table: 'events' | 'shopping' | 'birthdays' | 'notes', fetcher: (s: DataStore) => Promise<T[]>) {
   const { store, status } = useApp();
   const [items, setItems] = useState<T[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -136,4 +136,5 @@ function useLiveList<T>(table: 'events' | 'shopping' | 'birthdays', fetcher: (s:
 
 export const useEvents = () => useLiveList<CalendarEvent>('events', (s) => s.listEvents());
 export const useBirthdays = () => useLiveList<Birthday>('birthdays', (s) => s.listBirthdays());
+export const useNotes = () => useLiveList<Note>('notes', (s) => s.listNotes());
 export const useShopping = () => useLiveList<ShoppingItem>('shopping', (s) => s.listShopping());

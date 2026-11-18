@@ -10,10 +10,10 @@ import { AppState } from 'react-native';
 import { secureStorage } from './secure-storage';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -41,6 +41,10 @@ const toItem = (r: Row): ShoppingItem => ({
 const toBirthday = (r: Row): Birthday => ({
   id: r.id, name: r.name, month: r.month, day: r.day, year: r.year, note: r.note, createdBy: r.created_by,
 });
+const toNote = (r: Row): Note => ({
+  id: r.id, title: r.title, body: r.body, color: r.color, createdBy: r.created_by, updatedBy: r.updated_by, updatedAt: r.updated_at,
+});
+const NOTE_COLS = 'id, title, body, color, created_by, updated_by, updated_at';
 const BD_COLS = 'id, name, month, day, year, note, created_by';
 const eventRow = (e: EventInput) => ({ title: e.title, date: e.date, time: e.time, note: e.note, who: e.who });
 
@@ -203,6 +207,22 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('birthdays').delete().eq('id', id));
   }
 
+  // ---------- Notizen ----------
+  async listNotes() {
+    const r = must(await this.sb.from('notes').select(NOTE_COLS).eq('couple_id', await this.coupleId())
+      .order('updated_at', { ascending: false })) as Row[];
+    return r.map(toNote);
+  }
+  async addNote(n: NoteInput) {
+    return toNote(one(await this.sb.from('notes').insert({ ...checkNote(n), couple_id: await this.coupleId() }).select(NOTE_COLS).single()));
+  }
+  async updateNote(id: string, n: NoteInput) {
+    must(await this.sb.from('notes').update(checkNote(n)).eq('id', id));
+  }
+  async deleteNote(id: string) {
+    must(await this.sb.from('notes').delete().eq('id', id));
+  }
+
   // ---------- Einkauf ----------
   async listShopping() {
     const r = must(await this.sb.from('shopping_items').select('id, text, qty, done, created_by, created_at')
@@ -231,7 +251,7 @@ export class SupabaseStore implements DataStore {
 
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

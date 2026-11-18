@@ -10,6 +10,7 @@ export const light = {
   onAccent: '#FFFFFF',
   g1: 'rgba(28,118,228,0.26)', g2: 'rgba(255,141,193,0.34)', g3: 'rgba(255,138,31,0.2)', g4: 'rgba(150,120,255,0.14)',
   heart: 'rgba(204,60,130,0.09)',
+  n1: '#FFF3C4', n2: '#DCF0E3', n3: '#E2E7F8', n4: '#FBE5E2',
   shadow: '#16203A',
   dark: false,
 };
@@ -24,6 +25,7 @@ export const dark: Theme = {
   onAccent: '#0E121A',
   g1: 'rgba(60,140,255,0.22)', g2: 'rgba(255,120,190,0.18)', g3: 'rgba(255,150,60,0.12)', g4: 'rgba(140,110,255,0.16)',
   heart: 'rgba(255,190,225,0.06)',
+  n1: '#3A341F', n2: '#1D3328', n3: '#1F2849', n4: '#3B201E',
   shadow: '#000000',
   dark: true,
 };

@@ -3,13 +3,14 @@ import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fonts, useTheme } from '@/theme';
-import { IconCalendar, IconCart, IconHome } from '@/ui/icons';
+import { IconCalendar, IconCart, IconHome, IconNote } from '@/ui/icons';
 import { Press } from '@/ui/kit';
 
 const TABS = [
   { name: 'index', label: 'Start', Icon: IconHome },
   { name: 'kalender', label: 'Kalender', Icon: IconCalendar },
   { name: 'einkauf', label: 'Einkauf', Icon: IconCart },
+  { name: 'notizen', label: 'Notizen', Icon: IconNote },
 ] as const;
 
 /** Tab-Leiste wie in der Web-App: aktive Seite blau mit weicher Pille dahinter. */

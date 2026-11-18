@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, NoteInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -81,6 +81,16 @@ export function checkBirthday(b: BirthdayInput, now = new Date()): BirthdayInput
   const note = (b.note ?? '').trim() || null;
   if (note && note.length > 300) throw new InputError('Die Notiz darf höchstens 300 Zeichen haben.');
   return { name, month, day, year, note };
+}
+
+export function checkNote(n: NoteInput): NoteInput {
+  const title = clean(n.title) || null;
+  if (title && title.length > 120) throw new InputError('Der Titel darf höchstens 120 Zeichen haben.');
+  const body = (n.body ?? '').replace(/\s+$/g, '').replace(/^\s*\n/, '');
+  if (!body.trim()) throw new InputError('Die Notiz ist noch leer.');
+  if (body.length > 5000) throw new InputError('Die Notiz darf höchstens 5000 Zeichen haben.');
+  if (!['n1', 'n2', 'n3', 'n4'].includes(n.color)) throw new InputError('Unbekannte Farbe.');
+  return { title, body, color: n.color };
 }
 
 export function checkShopping(i: ShoppingInput): ShoppingInput {

@@ -105,6 +105,26 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.equal((await fremd.listBirthdays()).length, 0); // eigenes Paar, sieht nichts vom anderen
   });
 
+  test('Notizen: anlegen, "zuletzt von", sortiert, geprüft', async () => {
+    const janId = (await jan.getSession())!.userId;
+    const vId = (await vanessa.getSession())!.userId;
+    const a = await jan.addNote({ title: '  ', body: 'WLAN: sonne123\n', color: 'n2' });
+    assert.equal(a.title, null);
+    assert.equal(a.body, 'WLAN: sonne123');
+    assert.equal(a.updatedBy, janId);
+    const b = await vanessa.addNote({ title: 'Geschenke', body: 'Kochbuch', color: 'n4' });
+    await vanessa.updateNote(a.id, { title: 'WLAN', body: 'WLAN: mond456', color: 'n2' });
+    const list = await jan.listNotes();
+    assert.deepEqual(list.map((n) => n.id), [a.id, b.id]); // zuletzt geändert zuerst
+    assert.equal(list[0].updatedBy, vId);
+    await assert.rejects(() => jan.addNote({ title: null, body: '   ', color: 'n1' }), /leer/);
+    await assert.rejects(() => jan.addNote({ title: null, body: 'x', color: 'n9' as never }), /Farbe/);
+    await assert.rejects(() => jan.addNote({ title: null, body: 'x'.repeat(5001), color: 'n1' }), /5000/);
+    assert.equal((await fremd.listNotes()).length, 0);
+    await fremd.deleteNote(a.id);
+    assert.equal((await jan.listNotes()).length, 2);
+  });
+
   test('Konto löschen: Partner behält Einträge ohne Verweis', async () => {
     const janId = (await jan.getSession())!.userId;
     await jan.deleteAccount();
@@ -123,6 +143,7 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.equal([...db.events.values()].length, 0);
     assert.equal([...db.shopping.values()].length, 0);
     assert.equal([...db.birthdays.values()].length, 0);
+    assert.equal([...db.notes.values()].length, 0);
     assert.equal(db.couples.size, 1); // nur noch das Paar von "fremd"
   });
 

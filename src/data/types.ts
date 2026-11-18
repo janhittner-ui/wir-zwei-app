@@ -54,6 +54,19 @@ export interface Birthday {
 }
 export type BirthdayInput = Omit<Birthday, 'id' | 'createdBy'>;
 
+export type NoteColor = 'n1' | 'n2' | 'n3' | 'n4';
+export interface Note {
+  id: string;
+  title: string | null;
+  body: string;
+  color: NoteColor;
+  createdBy: string | null;
+  updatedBy: string | null;
+  /** ISO-Zeitpunkt */
+  updatedAt: string;
+}
+export type NoteInput = Pick<Note, 'title' | 'body' | 'color'>;
+
 export type EventInput = Omit<CalendarEvent, 'id' | 'createdBy'>;
 export type ShoppingInput = Pick<ShoppingItem, 'text' | 'qty'>;
 

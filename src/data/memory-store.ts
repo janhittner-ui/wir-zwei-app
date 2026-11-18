@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -25,6 +25,7 @@ interface Invite { code: string; coupleId: string; expiresAt: number }
 type EventRow = CalendarEvent & { coupleId: string };
 type ShopRow = ShoppingItem & { coupleId: string };
 type BdRow = Birthday & { coupleId: string };
+type NoteRow = Note & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -36,6 +37,7 @@ export class MemoryBackend {
   events = new Map<string, EventRow>();
   shopping = new Map<string, ShopRow>();
   birthdays = new Map<string, BdRow>();
+  notes = new Map<string, NoteRow>();
   /** Nur für Tests: feste Uhrzeit */
   now = () => Date.now();
   /** Der Code, den die "E-Mail" enthalten würde */
@@ -181,6 +183,7 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.events) if (v.coupleId === cid) this.db.events.delete(k);
       for (const [k, v] of this.db.shopping) if (v.coupleId === cid) this.db.shopping.delete(k);
       for (const [k, v] of this.db.birthdays) if (v.coupleId === cid) this.db.birthdays.delete(k);
+      for (const [k, v] of this.db.notes) if (v.coupleId === cid) this.db.notes.delete(k);
       for (const [k, v] of this.db.invites) if (v.coupleId === cid) this.db.invites.delete(k);
     } else {
       this.db.emit('couple', cid);
@@ -197,6 +200,10 @@ export class MemoryStore implements DataStore {
     for (const e of this.db.events.values()) if (e.createdBy === me) e.createdBy = null;
     for (const s of this.db.shopping.values()) if (s.createdBy === me) s.createdBy = null;
     for (const b of this.db.birthdays.values()) if (b.createdBy === me) b.createdBy = null;
+    for (const n of this.db.notes.values()) {
+      if (n.createdBy === me) n.createdBy = null;
+      if (n.updatedBy === me) n.updatedBy = null;
+    }
     this.db.profiles.delete(me);
     this.db.users.delete(me);
     this.db.passwords.delete(me);
@@ -268,6 +275,42 @@ export class MemoryStore implements DataStore {
     if (!b) return;
     this.db.birthdays.delete(id);
     this.db.emit('birthdays', b.coupleId);
+  }
+
+  // ---------- Notizen ----------
+  private ownNote(id: string) {
+    const n = this.db.notes.get(id);
+    return n && n.coupleId === this.coupleId() ? n : null;
+  }
+  private stamp() {
+    // streng steigend, damit "zuletzt geändert" eindeutig sortiert
+    return new Date(this.db.now() + ++seq).toISOString();
+  }
+  async listNotes() {
+    const cid = this.coupleId();
+    return [...this.db.notes.values()].filter((n) => n.coupleId === cid)
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(({ coupleId, ...n }) => ({ ...n }));
+  }
+  async addNote(input: NoteInput) {
+    const cid = this.coupleId();
+    const me = this.uid();
+    const row: NoteRow = { ...checkNote(input), id: uuid(), coupleId: cid, createdBy: me, updatedBy: me, updatedAt: this.stamp() };
+    this.db.notes.set(row.id, row);
+    this.db.emit('notes', cid);
+    const { coupleId, ...n } = row;
+    return { ...n };
+  }
+  async updateNote(id: string, input: NoteInput) {
+    const n = this.ownNote(id);
+    if (!n) return;
+    Object.assign(n, checkNote(input), { updatedBy: this.uid(), updatedAt: this.stamp() });
+    this.db.emit('notes', n.coupleId);
+  }
+  async deleteNote(id: string) {
+    const n = this.ownNote(id);
+    if (!n) return;
+    this.db.notes.delete(id);
+    this.db.emit('notes', n.coupleId);
   }
 
   // ---------- Einkauf ----------

@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -46,6 +46,12 @@ export interface DataStore {
   addBirthday(b: BirthdayInput): Promise<Birthday>;
   updateBirthday(id: string, b: BirthdayInput): Promise<void>;
   deleteBirthday(id: string): Promise<void>;
+
+  // Notizen
+  listNotes(): Promise<Note[]>;
+  addNote(n: NoteInput): Promise<Note>;
+  updateNote(id: string, n: NoteInput): Promise<void>;
+  deleteNote(id: string): Promise<void>;
 
   // Einkauf
   listShopping(): Promise<ShoppingItem[]>;
