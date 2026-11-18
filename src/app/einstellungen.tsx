@@ -7,16 +7,16 @@ import { APP_NAME } from '@/config';
 import { friendlyError } from '@/data/errors';
 import { useApp } from '@/data/provider';
 import type { PersonColor } from '@/data/types';
-import { InputError } from '@/data/validate';
-import { fromGerman, toGerman } from '@/lib/dates';
+import { ymd } from '@/lib/dates';
 import { fonts, personColors, useTheme } from '@/theme';
+import { DatePicker, FormRow } from '@/ui/date-field';
 import { IconX } from '@/ui/icons';
 import { Banner, Button, Card, Divider, Input, Press, Screen, T } from '@/ui/kit';
 
 export default function Einstellungen() {
   const { store, couple, profile, session, refresh } = useApp();
   const t = useTheme();
-  const [since, setSince] = useState(toGerman(couple?.togetherSince ?? null));
+  const [since, setSince] = useState<string | null>(couple?.togetherSince ?? null);
   const [names, setNames] = useState(couple?.names ?? '');
   const [name, setName] = useState(profile?.displayName ?? '');
   const [color, setColor] = useState<PersonColor>(profile?.color ?? 'blue');
@@ -38,9 +38,7 @@ export default function Einstellungen() {
   };
 
   const saveCouple = run('couple', async () => {
-    const iso = since.trim() ? fromGerman(since) : null;
-    if (since.trim() && !iso) throw new InputError('Bitte das Datum so eingeben: 20.05.2023');
-    await store.updateCouple({ togetherSince: iso, names });
+    await store.updateCouple({ togetherSince: since, names });
     await refresh();
     close();
   });
@@ -93,7 +91,18 @@ export default function Einstellungen() {
 
         <Card>
           <T v="h2">Euer Paar</T>
-          <Input label="Zusammen seit" value={since} onChangeText={setSince} placeholder="20.05.2023" keyboardType="numbers-and-punctuation" testID="since" />
+          <FormRow label="Zusammen seit" first>
+            {since ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <DatePicker value={since} onChange={setSince} maximumDate={new Date()} testID="since" />
+                <Press onPress={() => setSince(null)} accessibilityLabel="Datum entfernen" hitSlop={8} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+                  <IconX color={t.muted} size={16} />
+                </Press>
+              </View>
+            ) : (
+              <Button kind="link" title="Datum wählen" onPress={() => setSince(ymd(new Date()))} testID="since-add" />
+            )}
+          </FormRow>
           <Input label="Eure Namen (optional)" value={names} onChangeText={setNames} placeholder="Jan & Vanessa" maxLength={60} />
           <Button title="Speichern" busy={busy === 'couple'} onPress={saveCouple} testID="save-couple" />
           <Divider />

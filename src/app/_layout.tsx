@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DataProvider, useApp } from '@/data/provider';
@@ -33,13 +34,15 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
-    <SafeAreaProvider>
-      <ThemeRoot>
-        <DataProvider>
-          <Root />
-        </DataProvider>
-      </ThemeRoot>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeRoot>
+          <DataProvider>
+            <Root />
+          </DataProvider>
+        </ThemeRoot>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

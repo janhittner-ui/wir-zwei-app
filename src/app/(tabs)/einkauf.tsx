@@ -8,8 +8,9 @@ import type { ShoppingItem } from '@/data/types';
 import { splitQty } from '@/lib/qty';
 import { shopEmoji } from '@/lib/shop-emoji';
 import { fonts, personColors, useTheme } from '@/theme';
-import { IconCheck, IconPlus, IconX } from '@/ui/icons';
+import { IconCheck, IconPlus } from '@/ui/icons';
 import { Banner, Button, Card, CardHead, Input, Press, Screen, T } from '@/ui/kit';
+import { SwipeToDelete } from '@/ui/swipe-row';
 
 export default function Einkauf() {
   const t = useTheme();
@@ -55,33 +56,12 @@ export default function Einkauf() {
       { text: 'Löschen', style: 'destructive', onPress: () => act((l) => l.filter((x) => !x.done), () => store.clearDoneShopping()) },
     ]);
 
-  const Row = ({ it, first }: { it: ShoppingItem; first: boolean }) => {
-    const by = couple?.members.find((m) => m.id === it.createdBy);
-    return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: first ? 0 : 10, borderTopWidth: first ? 0 : 1, borderTopColor: t.line }}>
-        <Press
-          onPress={() => act((l) => l.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)), () => store.setShoppingDone(it.id, !it.done))}
-          scale={0.82}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: it.done }}
-          accessibilityLabel={it.text}
-          style={{ width: 26, height: 26, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', borderColor: it.done ? t.blue : t.lineStrong, backgroundColor: it.done ? t.blue : 'transparent' }}>
-          {it.done ? <IconCheck color={t.onAccent} size={16} /> : null}
-        </Press>
-        <Text style={{ fontSize: 21, width: 28, textAlign: 'center', opacity: it.done ? 0.55 : 1 }}>{shopEmoji(it.text)}</Text>
-        <View style={{ flex: 1 }}>
-          <T style={[{ fontFamily: fonts.bodySemi }, it.done && { textDecorationLine: 'line-through', color: t.muted, fontFamily: fonts.bodyMedium }]}>
-            {it.text}
-            {it.qty ? <T v="small"> {it.qty}</T> : null}
-          </T>
-        </View>
-        {by ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: personColors(t, by.color).dot }} accessibilityLabel={`von ${by.displayName}`} /> : null}
-        <Press onPress={() => act((l) => l.filter((x) => x.id !== it.id), () => store.deleteShopping(it.id))} accessibilityLabel={`${it.text} löschen`} scale={0.82} style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
-          <IconX color={t.muted} size={16} />
-        </Press>
-      </View>
-    );
-  };
+  const toggle = (it: ShoppingItem) => act((l) => l.map((x) => (x.id === it.id ? { ...x, done: !x.done } : x)), () => store.setShoppingDone(it.id, !it.done));
+  const remove = (it: ShoppingItem) => act((l) => l.filter((x) => x.id !== it.id), () => store.deleteShopping(it.id));
+  const rowProps = (it: ShoppingItem, i: number) => ({
+    key: it.id, it, first: i === 0, byColor: personColors(t, couple?.members.find((m) => m.id === it.createdBy)?.color).dot,
+    byName: couple?.members.find((m) => m.id === it.createdBy)?.displayName, onToggle: toggle, onDelete: remove,
+  });
 
   return (
     <Screen>
@@ -101,15 +81,55 @@ export default function Einkauf() {
           </Press>
         </View>
         {err ? <Banner warn>{err}</Banner> : null}
-        {open.length ? open.map((it, i) => <Row key={it.id} it={it} first={i === 0} />) : <T v="muted">Alles da. Nichts auf der Liste.</T>}
+        {open.length ? open.map((it, i) => { const { key, ...p } = rowProps(it, i); return <ShopRow key={key} {...p} />; }) : <T v="muted">Alles da. Nichts auf der Liste.</T>}
+        {items.length ? <T v="small" style={{ textAlign: 'center' }}>Zum Löschen nach links wischen</T> : null}
       </Card>
 
       {done.length ? (
         <Card>
           <CardHead title={`Erledigt (${done.length})`} action={<Button kind="link" title="Alle löschen" onPress={clearDone} />} />
-          {done.map((it, i) => <Row key={it.id} it={it} first={i === 0} />)}
+          {done.map((it, i) => { const { key, ...p } = rowProps(it, i); return <ShopRow key={key} {...p} />; })}
         </Card>
       ) : null}
     </Screen>
+  );
+}
+
+/** Eine Zeile: runder Haken wie in "Erinnerungen", Emoji, Text, Punkt der Person. Nach links wischen = löschen. */
+function ShopRow({ it, first, byColor, byName, onToggle, onDelete }: {
+  it: ShoppingItem; first: boolean; byColor: string; byName?: string;
+  onToggle: (it: ShoppingItem) => void; onDelete: (it: ShoppingItem) => void;
+}) {
+  const t = useTheme();
+  return (
+    <View style={{ borderTopWidth: first ? 0 : 1, borderTopColor: t.line, paddingTop: first ? 0 : 6 }}>
+      <SwipeToDelete onDelete={() => onDelete(it)}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.surface, paddingVertical: 4 }}
+          accessible
+          accessibilityLabel={`${it.text}${it.qty ? `, ${it.qty}` : ''}${it.done ? ', erledigt' : ''}`}
+          accessibilityActions={[{ name: 'activate', label: it.done ? 'Wieder offen' : 'Abhaken' }, { name: 'delete', label: 'Löschen' }]}
+          onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'delete' ? onDelete(it) : onToggle(it))}>
+          <Press
+            onPress={() => onToggle(it)}
+            scale={0.82}
+            hitSlop={8}
+            accessibilityRole="checkbox"
+            accessibilityLabel={it.text}
+            accessibilityState={{ checked: it.done }}
+            style={{ width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center', borderColor: it.done ? t.blue : t.lineStrong, backgroundColor: it.done ? t.blue : 'transparent' }}>
+            {it.done ? <IconCheck color={t.onAccent} size={14} /> : null}
+          </Press>
+          <Text style={{ fontSize: 21, width: 28, textAlign: 'center', opacity: it.done ? 0.55 : 1 }}>{shopEmoji(it.text)}</Text>
+          <View style={{ flex: 1 }}>
+            <T style={[{ fontFamily: fonts.bodySemi }, it.done && { textDecorationLine: 'line-through', color: t.muted, fontFamily: fonts.bodyMedium }]}>
+              {it.text}
+              {it.qty ? <T v="small"> {it.qty}</T> : null}
+            </T>
+          </View>
+          {byName ? <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: byColor }} /> : null}
+        </View>
+      </SwipeToDelete>
+    </View>
   );
 }
