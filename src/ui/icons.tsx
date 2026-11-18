@@ -1,0 +1,31 @@
+/** Icons aus Wir Zwei v40 (gleiche Pfade), gezeichnet mit react-native-svg. */
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
+
+type P = { color: string; size?: number; width?: number };
+
+const S = ({ color, size = 22, width = 1.9, children }: P & { children: React.ReactNode }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
+    {children}
+  </Svg>
+);
+
+export const IconHome = (p: P) => <S {...p}><Path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></S>;
+export const IconCalendar = (p: P) => <S {...p}><Rect x={3} y={4.5} width={18} height={16.5} rx={3} /><Path d="M3 9.5h18M8 2.5v4M16 2.5v4" /></S>;
+export const IconCart = (p: P) => <S {...p}><Path d="M3 4h2.5l2.2 11h10.6L20.5 8H7" /><Circle cx={9.5} cy={19.5} r={1.4} /><Circle cx={17} cy={19.5} r={1.4} /></S>;
+export const IconPlus = (p: P) => <S width={2} {...p}><Path d="M12 5v14M5 12h14" /></S>;
+export const IconCheck = (p: P) => <S width={3} {...p}><Path d="m5 12.5 4.5 4.5L19 7.5" /></S>;
+export const IconX = (p: P) => <S width={2.2} {...p}><Path d="M6 6l12 12M18 6 6 18" /></S>;
+export const IconLeft = (p: P) => <S width={2.2} {...p}><Path d="m15 5-7 7 7 7" /></S>;
+export const IconRight = (p: P) => <S width={2.2} {...p}><Path d="m9 5 7 7-7 7" /></S>;
+export const IconPencil = (p: P) => <S {...p}><Path d="M4 20h4L19 9l-4-4L4 16z" /><Path d="m13.5 6.5 4 4" /></S>;
+export const IconGear = (p: P) => (
+  <S {...p}>
+    <Circle cx={12} cy={12} r={3} />
+    <Path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+  </S>
+);
+export const IconHeart = ({ color, size = 22 }: P) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <Path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8.1 3.6 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.6 0 5.7 3.6 4.5 6.8-1.8 4.6-9.3 9.2-9.3 9.2z" />
+  </Svg>
+);

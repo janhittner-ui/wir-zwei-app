@@ -1,0 +1,181 @@
+/** Start: "Zusammen seit", Tagesvers, nächste Termine, offene Einkäufe. */
+import { router } from 'expo-router';
+import { useMemo } from 'react';
+import { Share, StyleSheet, Text, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
+
+import { useApp, useEvents, useShopping } from '@/data/provider';
+import { cmpEvent, dayVerse, fullDate, longDay, parse, together, ymd } from '@/lib/dates';
+import { shopEmoji } from '@/lib/shop-emoji';
+import { fonts, useTheme } from '@/theme';
+import { IconGear, IconPencil, IconPlus } from '@/ui/icons';
+import { EventRow } from '@/ui/event-row';
+import { Button, Card, CardHead, Press, Screen, T } from '@/ui/kit';
+
+export default function Start() {
+  const { couple, profile } = useApp();
+  const t = useTheme();
+  const { items: events } = useEvents();
+  const { items: shopping } = useShopping();
+
+  const todayIso = ymd(new Date());
+  const upcoming = useMemo(() => events.filter((e) => e.date >= todayIso).sort(cmpEvent).slice(0, 4), [events, todayIso]);
+  const open = useMemo(() => shopping.filter((s) => !s.done).sort((a, b) => a.createdAt.localeCompare(b.createdAt)), [shopping]);
+  const alone = (couple?.members.length ?? 0) < 2;
+
+  return (
+    <Screen>
+      <Hero />
+      {alone && couple ? <InviteCard code={couple.inviteCode} /> : null}
+      <Verse />
+
+      <Card>
+        <CardHead title="Demnächst" action={<Button kind="link" title="Kalender" onPress={() => router.navigate('/kalender')} />} />
+        {upcoming.length ? (
+          upcoming.map((e, i) => <EventRow key={e.id} e={e} members={couple?.members ?? []} first={i === 0} />)
+        ) : (
+          <>
+            <T v="muted">Keine Termine geplant.</T>
+            <View style={{ alignSelf: 'flex-start' }}>
+              <Button small kind="ghost" title="Termin eintragen" icon={<IconPlus color={t.ink} size={18} />} onPress={() => router.push('/termin')} />
+            </View>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        <CardHead title="Einkauf" action={<Button kind="link" title={open.length ? `${open.length} offen` : 'Liste'} onPress={() => router.navigate('/einkauf')} />} />
+        {open.length ? (
+          <>
+            {open.slice(0, 5).map((s) => (
+              <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text style={{ fontSize: 21, width: 28, textAlign: 'center' }}>{shopEmoji(s.text)}</Text>
+                <T style={{ flex: 1, fontFamily: fonts.bodySemi }}>{s.text}{s.qty ? <T v="small"> {s.qty}</T> : null}</T>
+              </View>
+            ))}
+            {open.length > 5 ? <T v="muted">und {open.length - 5} weitere</T> : null}
+          </>
+        ) : (
+          <T v="muted">Alles da. Nichts auf der Liste.</T>
+        )}
+      </Card>
+
+      <Press onPress={() => router.push('/einstellungen')} style={{ alignSelf: 'center', flexDirection: 'row', gap: 6, alignItems: 'center', padding: 8 }}>
+        <IconGear color={t.muted} size={18} />
+        <T v="muted">Einstellungen{profile ? ` · angemeldet als ${profile.displayName}` : ''}</T>
+      </Press>
+    </Screen>
+  );
+}
+
+function Hero() {
+  const { couple, profile } = useApp();
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+  const tg = couple?.togetherSince ? together(couple.togetherSince) : null;
+  const white = '#FFFFFF';
+
+  return (
+    <View style={[styles.hero]} accessibilityLabel="Titelbild">
+      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
+        <Defs>
+          <Pattern id="stripes" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <Rect width="22" height="44" fill="rgba(255,255,255,0.06)" />
+          </Pattern>
+          <LinearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#080C16" stopOpacity={0.3} />
+            <Stop offset="0.4" stopColor="#080C16" stopOpacity={0} />
+            <Stop offset="1" stopColor="#080C16" stopOpacity={0.55} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="#24346F" />
+        <Rect width="100%" height="100%" fill="url(#stripes)" />
+        <Rect width="100%" height="100%" fill="url(#shade)" />
+      </Svg>
+      <View style={styles.heroTop}>
+        <Text style={[styles.kicker, { color: white }]}>{longDay(now)}</Text>
+        <Press onPress={() => router.push('/einstellungen')} style={styles.edit} accessibilityLabel="Bearbeiten">
+          <IconPencil color={white} size={15} />
+          <Text style={{ color: white, fontFamily: fonts.bodySemi, fontSize: 13 }}>Bearbeiten</Text>
+        </Press>
+      </View>
+      <View style={styles.heroBottom}>
+        {couple?.names ? <Text style={{ fontFamily: fonts.hand, fontSize: 30, color: white }}>{couple.names}</Text> : null}
+        {tg ? (
+          <>
+            <Text style={[styles.since, { color: white }]}>Zusammen seit {fullDate(parse(couple!.togetherSince!))}</Text>
+            <Text style={{ fontFamily: fonts.display, fontSize: 26, lineHeight: 30, color: white }}>{tg.text}</Text>
+            {tg.anniv ? (
+              <View style={styles.anniv}>
+                <Text style={{ color: white, fontFamily: fonts.bodySemi, fontSize: 13 }}>{tg.anniv}</Text>
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Text style={[styles.since, { color: white }]}>{greet}{profile ? `, ${profile.displayName}` : ''}</Text>
+            <Press onPress={() => router.push('/einstellungen')} style={styles.setbtn}>
+              <Text style={{ color: '#1A2130', fontFamily: fonts.bodyBold }}>Seit wann seid ihr zusammen?</Text>
+            </Press>
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function InviteCard({ code }: { code: string | null }) {
+  const { store, refresh } = useApp();
+  const t = useTheme();
+  const pretty = code ? `${code.slice(0, 4)}-${code.slice(4)}` : null;
+  return (
+    <Card style={{ borderWidth: 1.5, borderColor: t.pink }}>
+      <T v="h2">Lade deinen Schatz ein</T>
+      {pretty ? (
+        <>
+          <T v="muted">Dein Schatz installiert Wir Zwei, meldet sich an und gibt diesen Code ein. Er gilt 48 Stunden.</T>
+          <Text selectable style={{ fontFamily: fonts.displayHeavy, fontSize: 34, letterSpacing: 4, color: t.ink, textAlign: 'center' }} testID="invite-code-display">
+            {pretty}
+          </Text>
+          <Button title="Code teilen" onPress={() => Share.share({ message: `Komm zu mir in Wir Zwei! Mein Einladungscode: ${pretty}` }).catch(() => {})} />
+        </>
+      ) : (
+        <>
+          <T v="muted">Der letzte Code ist abgelaufen.</T>
+          <Button title="Neuen Code erzeugen" onPress={async () => { await store.createInvite().catch(() => {}); await refresh(); }} />
+        </>
+      )}
+    </Card>
+  );
+}
+
+function Verse() {
+  const t = useTheme();
+  const [txt, ref] = dayVerse();
+  const long = txt.length > 140;
+  return (
+    <Card style={{ paddingHorizontal: 18, overflow: 'hidden' }}>
+      <Text style={{ position: 'absolute', right: 12, top: -30, fontFamily: fonts.displayHeavy, fontSize: 150, color: t.blueSoft }} accessible={false}>
+        {'“'}
+      </Text>
+      <T v="eyebrow">Tagesvers</T>
+      <Text style={{ fontFamily: fonts.displaySemi, fontSize: long ? 15.5 : 18, lineHeight: long ? 22 : 24, color: t.ink }}>{txt}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 10 }}>
+        <Text style={{ fontFamily: fonts.bodyBold, color: t.blue, fontSize: 14 }}>{ref}</Text>
+        <T v="small" style={{ fontSize: 11.5 }}>Lutherbibel 1912</T>
+      </View>
+    </Card>
+  );
+}
+
+const styles = StyleSheet.create({
+  hero: { borderRadius: 22, overflow: 'hidden', aspectRatio: 5 / 4, maxHeight: 480, width: '100%', backgroundColor: '#24346F' },
+  heroTop: { position: 'absolute', top: 14, left: 16, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  kicker: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.92, paddingTop: 6, flexShrink: 1 },
+  edit: { backgroundColor: 'rgba(10,14,22,0.5)', borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12, flexDirection: 'row', gap: 5, alignItems: 'center' },
+  heroBottom: { position: 'absolute', left: 16, right: 16, bottom: 16, gap: 3, alignItems: 'flex-start' },
+  since: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.9 },
+  anniv: { marginTop: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 999, paddingVertical: 5, paddingHorizontal: 11 },
+  setbtn: { backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, marginTop: 6 },
+});

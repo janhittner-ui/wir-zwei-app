@@ -1,0 +1,130 @@
+# Wir Zwei auf dem iPhone starten (Anleitung für Windows)
+
+Du brauchst etwa 30 Minuten. Am Ende läuft Wir Zwei auf deinem iPhone, zuerst im Demo-Modus, danach mit echter Datenbank.
+
+---
+
+## Teil A: Einmalig vorbereiten
+
+### 1. Node.js installieren
+1. Öffne [nodejs.org](https://nodejs.org) und lade die Version mit **LTS** herunter.
+2. Installer starten und immer auf **Next** klicken. Die Häkchen so lassen, wie sie sind.
+
+### 2. Git installieren
+1. Öffne [git-scm.com/download/win](https://git-scm.com/download/win) und lade **Git for Windows** herunter.
+2. Installer starten und ebenfalls immer **Next**.
+
+### 3. Expo Go aufs iPhone
+Im App Store nach **Expo Go** suchen und installieren.
+
+---
+
+## Teil B: Die App holen und im Demo-Modus starten
+
+### 4. PowerShell öffnen
+Startmenü öffnen, **PowerShell** tippen, Enter.
+
+### 5. Projekt herunterladen
+Diese Zeilen nacheinander eintippen (oder kopieren) und jeweils mit Enter bestätigen:
+
+```powershell
+cd $HOME\Documents
+git clone https://github.com/janhittner-ui/wir-zwei-app.git
+cd wir-zwei-app
+npm install
+```
+
+Beim ersten `git clone` öffnet sich ein Fenster zur GitHub-Anmeldung. Melde dich dort an, das Projekt ist privat.
+`npm install` dauert ein paar Minuten.
+
+### 6. Starten
+```powershell
+npx expo start
+```
+
+Es erscheint ein großer QR-Code in der PowerShell.
+
+- Falls Windows fragt, ob Node.js im Netzwerk erlaubt sein soll: **Private Netzwerke** erlauben.
+- Laptop und iPhone müssen im **gleichen WLAN** sein.
+
+### 7. Auf dem iPhone öffnen
+Öffne die normale **Kamera-App** auf dem iPhone, halte sie auf den QR-Code und tippe auf **In Expo Go öffnen**.
+
+Die App startet im **Demo-Modus** (blauer Hinweis oben). Der Anmeldecode ist dort immer `123456`. Es wird nichts gespeichert.
+
+**Klappt es nicht?** Drücke in der PowerShell `Strg + C` und starte so:
+```powershell
+npx expo start --tunnel
+```
+Das funktioniert auch, wenn das WLAN den direkten Weg blockiert.
+
+---
+
+## Teil C: Echte Datenbank einrichten (Supabase)
+
+### 8. Konto und Projekt anlegen
+1. Öffne [supabase.com](https://supabase.com) und registriere dich (kostenloser Plan reicht).
+2. Klicke auf **New project**.
+   - **Name:** `wir-zwei`
+   - **Database Password:** auf **Generate** klicken und das Passwort sicher aufheben (z. B. im Passwort-Manager).
+   - **Region:** **Central EU (Frankfurt)** wählen. Wichtig für den Datenschutz.
+3. **Create new project** klicken und 1 bis 2 Minuten warten.
+
+### 9. Datenbank-Tabellen anlegen
+1. Links im Menü **SQL Editor** öffnen.
+2. Auf deinem Laptop die Datei `wir-zwei-app\supabase\migrations\20261118000000_init.sql` mit dem Editor öffnen (Rechtsklick → Öffnen mit → Editor), alles markieren (`Strg + A`) und kopieren.
+3. Im SQL Editor einfügen und unten rechts auf **Run** klicken.
+4. Es sollte **Success. No rows returned** erscheinen.
+
+### 10. Anmelde-E-Mail mit Code einstellen
+Die App schickt einen Zahlencode statt eines Links.
+1. Links **Authentication** → **Emails** (bzw. **Email Templates**) öffnen.
+2. Die Vorlage **Magic Link** auswählen.
+3. **Subject:** `Dein Anmeldecode für Wir Zwei`
+4. **Body** komplett ersetzen durch:
+   ```html
+   <h2>Dein Code für Wir Zwei</h2>
+   <p>Gib diesen Code in der App ein:</p>
+   <p style="font-size:28px;font-weight:bold;letter-spacing:4px">{{ .Token }}</p>
+   <p>Der Code gilt eine Stunde. Wenn du dich nicht anmelden wolltest, ignoriere diese E-Mail.</p>
+   ```
+5. **Save** klicken.
+
+### 11. Zugangsdaten in die App eintragen
+1. In Supabase links **Project Settings** (Zahnrad) → **API Keys** öffnen. Den **Publishable key** kopieren (beginnt mit `sb_publishable_`). Falls dort nur „anon key“ steht, nimm den.
+2. Unter **Data API** (oder auf der Projekt-Startseite) die **Project URL** kopieren (`https://….supabase.co`).
+3. Im Ordner `wir-zwei-app` die Datei `.env.example` kopieren und die Kopie **`.env`** nennen. In PowerShell geht das so:
+   ```powershell
+   copy .env.example .env
+   notepad .env
+   ```
+4. Die beiden Werte eintragen, speichern, Editor schließen.
+
+Den **Secret key** oder **service_role key** bitte niemals in die App oder in die `.env` eintragen.
+
+### 12. Neu starten
+```powershell
+npx expo start -c
+```
+QR-Code wieder mit der Kamera scannen. Der Demo-Hinweis ist jetzt weg. Melde dich mit deiner echten E-Mail an.
+
+### 13. Vanessa dazuholen
+1. Du: anmelden, Namen eingeben, **Gemeinsames Konto anlegen**. Auf der Startseite steht ein Code wie `K7MB-Q2XD`.
+2. Vanessa: Expo Go installieren, denselben QR-Code scannen (dein Laptop muss dabei laufen), mit ihrer E-Mail anmelden, **Ich habe einen Code** wählen und den Code eingeben.
+3. Fertig: Termine und Einkaufsliste erscheinen jetzt sofort auf beiden Handys.
+
+---
+
+## Später: Neue Version holen
+Wenn ich etwas am Code geändert habe:
+```powershell
+cd $HOME\Documents\wir-zwei-app
+git pull
+npm install
+npx expo start -c
+```
+
+## Gut zu wissen
+- **Supabase verschickt im kostenlosen Plan nur wenige E-Mails pro Stunde.** Zum Testen reicht das. Vor der Veröffentlichung richten wir einen eigenen E-Mail-Versand (in der EU) ein.
+- Kostenlose Supabase-Projekte werden nach einer Woche ohne Nutzung pausiert. Auf supabase.com kannst du sie mit einem Klick wieder starten.
+- In Expo Go läuft die App nur, solange `npx expo start` auf dem Laptop läuft. Für eine richtige App auf dem Home-Bildschirm (ohne Laptop) bauen wir später mit EAS eine Testversion für TestFlight.
