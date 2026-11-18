@@ -14,8 +14,10 @@ Du brauchst etwa 30 Minuten. Am Ende läuft Wir Zwei auf deinem iPhone, zuerst i
 1. Öffne [git-scm.com/download/win](https://git-scm.com/download/win) und lade **Git for Windows** herunter.
 2. Installer starten und ebenfalls immer **Next**.
 
-### 3. Expo Go aufs iPhone
-Im App Store nach **Expo Go** suchen und installieren.
+### 3. Expo-Konto anlegen und Expo Go aufs iPhone
+1. Auf [expo.dev/signup](https://expo.dev/signup) ein kostenloses Konto anlegen (Benutzername + Passwort merken). Dieses Konto brauchen wir später auch für den App Store.
+2. Im App Store nach **Expo Go** suchen und installieren.
+3. Expo Go öffnen, unten auf **Profil** bzw. **Settings** tippen und mit dem gerade angelegten Konto **anmelden**.
 
 ---
 
@@ -47,7 +49,13 @@ npm install
 Beim ersten `git clone` öffnet sich ein Fenster zur GitHub-Anmeldung. Melde dich dort an, das Projekt ist privat.
 `npm install` dauert ein paar Minuten.
 
-### 6. Starten
+### 6. Am Laptop bei Expo anmelden (einmalig)
+```powershell
+npx expo login
+```
+Benutzername und Passwort vom Expo-Konto eingeben (beim Passwort sieht man beim Tippen nichts, das ist normal). Ohne diesen Schritt zeigt Expo Go auf dem iPhone: *„You need to be signed in to Expo Go and Expo CLI“*.
+
+### 7. Starten
 ```powershell
 npx expo start
 ```
@@ -57,7 +65,7 @@ Es erscheint ein großer QR-Code in der PowerShell.
 - Falls Windows fragt, ob Node.js im Netzwerk erlaubt sein soll: **Private Netzwerke** erlauben.
 - Laptop und iPhone müssen im **gleichen WLAN** sein.
 
-### 7. Auf dem iPhone öffnen
+### 8. Auf dem iPhone öffnen
 Öffne die normale **Kamera-App** auf dem iPhone, halte sie auf den QR-Code und tippe auf **In Expo Go öffnen**.
 
 Die App startet im **Demo-Modus** (blauer Hinweis oben). Der Anmeldecode ist dort immer `123456`. Es wird nichts gespeichert.
@@ -72,7 +80,7 @@ Das funktioniert auch, wenn das WLAN den direkten Weg blockiert.
 
 ## Teil C: Echte Datenbank einrichten (Supabase)
 
-### 8. Konto und Projekt anlegen
+### 9. Konto und Projekt anlegen
 1. Öffne [supabase.com](https://supabase.com) und registriere dich (kostenloser Plan reicht).
 2. Klicke auf **New project**.
    - **Name:** `wir-zwei`
@@ -80,13 +88,13 @@ Das funktioniert auch, wenn das WLAN den direkten Weg blockiert.
    - **Region:** **Central EU (Frankfurt)** wählen. Wichtig für den Datenschutz.
 3. **Create new project** klicken und 1 bis 2 Minuten warten.
 
-### 9. Datenbank-Tabellen anlegen
+### 10. Datenbank-Tabellen anlegen
 1. Links im Menü **SQL Editor** öffnen.
 2. Auf deinem Laptop die Datei `wir-zwei-app\supabase\migrations\20261118000000_init.sql` mit dem Editor öffnen (Rechtsklick → Öffnen mit → Editor), alles markieren (`Strg + A`) und kopieren.
 3. Im SQL Editor einfügen und unten rechts auf **Run** klicken.
 4. Es sollte **Success. No rows returned** erscheinen.
 
-### 10. Anmelde-E-Mail mit Code einstellen
+### 11. Anmelde-E-Mail mit Code einstellen
 Die App schickt einen Zahlencode statt eines Links.
 1. Links **Authentication** → **Emails** (bzw. **Email Templates**) öffnen.
 2. Die Vorlage **Magic Link** auswählen.
@@ -100,7 +108,7 @@ Die App schickt einen Zahlencode statt eines Links.
    ```
 5. **Save** klicken.
 
-### 11. Zugangsdaten in die App eintragen
+### 12. Zugangsdaten in die App eintragen
 1. In Supabase links **Project Settings** (Zahnrad) → **API Keys** öffnen. Den **Publishable key** kopieren (beginnt mit `sb_publishable_`). Falls dort nur „anon key“ steht, nimm den.
 2. Unter **Data API** (oder auf der Projekt-Startseite) die **Project URL** kopieren (`https://….supabase.co`).
 3. Im Ordner `wir-zwei-app` die Datei `.env.example` kopieren und die Kopie **`.env`** nennen. In PowerShell geht das so:
@@ -112,15 +120,15 @@ Die App schickt einen Zahlencode statt eines Links.
 
 Den **Secret key** oder **service_role key** bitte niemals in die App oder in die `.env` eintragen.
 
-### 12. Neu starten
+### 13. Neu starten
 ```powershell
 npx expo start -c
 ```
 QR-Code wieder mit der Kamera scannen. Der Demo-Hinweis ist jetzt weg. Melde dich mit deiner echten E-Mail an.
 
-### 13. Vanessa dazuholen
+### 14. Vanessa dazuholen
 1. Du: anmelden, Namen eingeben, **Gemeinsames Konto anlegen**. Auf der Startseite steht ein Code wie `K7MB-Q2XD`.
-2. Vanessa: Expo Go installieren, denselben QR-Code scannen (dein Laptop muss dabei laufen), mit ihrer E-Mail anmelden, **Ich habe einen Code** wählen und den Code eingeben.
+2. Vanessa: Expo Go installieren, dort mit **deinem** Expo-Konto anmelden, denselben QR-Code scannen (dein Laptop muss dabei laufen), mit ihrer E-Mail anmelden, **Ich habe einen Code** wählen und den Code eingeben.
 3. Fertig: Termine und Einkaufsliste erscheinen jetzt sofort auf beiden Handys.
 
 ---
