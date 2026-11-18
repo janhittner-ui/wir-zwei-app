@@ -178,6 +178,8 @@ describe('Helfer', () => {
 
   test('Fehlermeldungen sind deutsch', () => {
     assert.match(friendlyError(new Error('invalid_code')), /Einladungscode/);
-    assert.match(friendlyError(new Error('irgendwas')), /schiefgegangen/);
+    assert.match(friendlyError(new Error('irgendwas')), /schiefgegangen.*irgendwas/);
+    assert.match(friendlyError(new Error('Invalid API key')), /Schlüssel/);
+    assert.match(friendlyError(new Error('email rate limit exceeded')), /Zu viele/);
   });
 });
