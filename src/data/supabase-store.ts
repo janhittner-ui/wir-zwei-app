@@ -8,12 +8,12 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 
 import { secureStorage } from './secure-storage';
-import type { DataStore, Unsubscribe } from './store';
+import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -38,6 +38,10 @@ const toEvent = (r: Row): CalendarEvent => ({
 const toItem = (r: Row): ShoppingItem => ({
   id: r.id, text: r.text, qty: r.qty, done: r.done, createdBy: r.created_by, createdAt: r.created_at,
 });
+const toBirthday = (r: Row): Birthday => ({
+  id: r.id, name: r.name, month: r.month, day: r.day, year: r.year, note: r.note, createdBy: r.created_by,
+});
+const BD_COLS = 'id, name, month, day, year, note, created_by';
 const eventRow = (e: EventInput) => ({ title: e.title, date: e.date, time: e.time, note: e.note, who: e.who });
 
 export class SupabaseStore implements DataStore {
@@ -182,6 +186,23 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('events').delete().eq('id', id));
   }
 
+  // ---------- Geburtstage ----------
+  async listBirthdays() {
+    const r = must(await this.sb.from('birthdays').select(BD_COLS).eq('couple_id', await this.coupleId())
+      .order('month').order('day')) as Row[];
+    return r.map(toBirthday);
+  }
+  async addBirthday(b: BirthdayInput) {
+    const v = checkBirthday(b);
+    return toBirthday(one(await this.sb.from('birthdays').insert({ ...v, couple_id: await this.coupleId() }).select(BD_COLS).single()));
+  }
+  async updateBirthday(id: string, b: BirthdayInput) {
+    must(await this.sb.from('birthdays').update(checkBirthday(b)).eq('id', id));
+  }
+  async deleteBirthday(id: string) {
+    must(await this.sb.from('birthdays').delete().eq('id', id));
+  }
+
   // ---------- Einkauf ----------
   async listShopping() {
     const r = must(await this.sb.from('shopping_items').select('id, text, qty, done, created_by, created_at')
@@ -209,8 +230,8 @@ export class SupabaseStore implements DataStore {
   }
 
   // ---------- Live-Sync ----------
-  subscribe(table: 'events' | 'shopping' | 'couple', cb: () => void): Unsubscribe {
-    const tables = table === 'events' ? ['events'] : table === 'shopping' ? ['shopping_items'] : ['couples', 'couple_members'];
+  subscribe(table: LiveTable, cb: () => void): Unsubscribe {
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

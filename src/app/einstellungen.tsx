@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 
+import { APP_NAME } from '@/config';
 import { friendlyError } from '@/data/errors';
 import { useApp } from '@/data/provider';
 import type { PersonColor } from '@/data/types';
@@ -127,7 +128,7 @@ export default function Einstellungen() {
         <Card>
           <T v="h2">Datenschutz</T>
           <T v="muted">
-            Wir Zwei speichert nur, was ihr selbst eintragt, dazu deine E-Mail-Adresse für die Anmeldung. Die Daten liegen auf Servern in
+            {APP_NAME} speichert nur, was ihr selbst eintragt, dazu deine E-Mail-Adresse für die Anmeldung. Die Daten liegen auf Servern in
             der EU und sind nur für euch beide sichtbar. Es gibt keine Werbung, kein Tracking und keine Weitergabe an Dritte.
           </T>
           {store.kind === 'demo' ? <Banner>Demo-Modus: Es wird gerade gar nichts gespeichert.</Banner> : null}

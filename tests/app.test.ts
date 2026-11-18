@@ -10,6 +10,7 @@ import { friendlyError } from '../src/data/errors';
 import { checkEvent, normalizeInviteCode, normalizeTime } from '../src/data/validate';
 import { dayVerse, fromGerman, monthGrid, together, toGerman } from '../src/lib/dates';
 import { splitQty } from '../src/lib/qty';
+import { birthdayIn, nextBirthday, searchKey, upcomingBirthdays } from '../src/lib/birthdays';
 import { shopEmoji } from '../src/lib/shop-emoji';
 import { VERSES } from '../src/lib/verses';
 
@@ -86,6 +87,24 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.equal((await vanessa.listEvents())[0].title, 'Kino');
   });
 
+  test('Geburtstage: anlegen, prüfen, teilen', async () => {
+    const b = await jan.addBirthday({ name: ' Oma  Helga ', month: 3, day: 14, year: 1941, note: '' });
+    assert.equal(b.name, 'Oma Helga');
+    assert.equal(b.note, null);
+    await assert.rejects(() => jan.addBirthday({ name: 'X', month: 4, day: 31, year: null, note: null }), /zwischen 1 und 30/);
+    await assert.rejects(() => jan.addBirthday({ name: 'X', month: 2, day: 30, year: null, note: null }), /zwischen 1 und 29/);
+    await assert.rejects(() => jan.addBirthday({ name: 'X', month: 1, day: 1, year: 2999, note: null }), /Jahr/);
+    await assert.rejects(() => jan.addBirthday({ name: '', month: 1, day: 1, year: null, note: null }), /Namen/);
+    await assert.rejects(() => jan.addBirthday({ name: 'X', month: 1, day: NaN, year: null, note: null }), /Tag/);
+    let pings = 0;
+    const off = vanessa.subscribe('birthdays', () => pings++);
+    await jan.updateBirthday(b.id, { name: 'Oma Helga', month: 3, day: 15, year: 1941, note: 'Pralinen' });
+    off();
+    assert.equal(pings, 1);
+    assert.equal((await vanessa.listBirthdays())[0].day, 15);
+    assert.equal((await fremd.listBirthdays()).length, 0); // eigenes Paar, sieht nichts vom anderen
+  });
+
   test('Konto löschen: Partner behält Einträge ohne Verweis', async () => {
     const janId = (await jan.getSession())!.userId;
     await jan.deleteAccount();
@@ -103,6 +122,7 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     await vanessa.deleteAccount();
     assert.equal([...db.events.values()].length, 0);
     assert.equal([...db.shopping.values()].length, 0);
+    assert.equal([...db.birthdays.values()].length, 0);
     assert.equal(db.couples.size, 1); // nur noch das Paar von "fremd"
   });
 
@@ -140,6 +160,22 @@ describe('Helfer', () => {
     assert.equal(g.slice(0, 6).every((x) => x === null), true);
     assert.equal(g[6]!.getDate(), 1);
     assert.equal(g.length % 7, 0);
+  });
+
+  test('Geburtstage: nächster Termin, Alter, 29. Februar', () => {
+    const now = new Date(2026, 10, 18);
+    const oma = { id: '1', name: 'Oma', month: 3, day: 14, year: 1941, note: null, createdBy: null };
+    const heute = { id: '2', name: 'Ändi', month: 11, day: 18, year: 1990, note: null, createdBy: null };
+    const leap = { id: '3', name: 'Lea', month: 2, day: 29, year: 2000, note: null, createdBy: null };
+    assert.deepEqual(nextBirthday(heute, now), { date: new Date(2026, 10, 18), days: 0, age: 36 });
+    const o = nextBirthday(oma, now);
+    assert.equal(o.date.getFullYear(), 2027);
+    assert.equal(o.age, 86);
+    assert.equal(birthdayIn(leap, 2027).getDate(), 28);
+    assert.equal(birthdayIn(leap, 2028).getDate(), 29);
+    assert.deepEqual(upcomingBirthdays([oma, leap, heute], now).map((b) => b.name), ['Ändi', 'Lea', 'Oma']);
+    assert.equal(nextBirthday({ ...oma, year: null }, now).age, null);
+    assert.ok(searchKey('Ändi').includes('andi'));
   });
 
   test('Datum deutsch ↔ ISO', () => {

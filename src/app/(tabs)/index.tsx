@@ -4,19 +4,23 @@ import { useMemo } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
 
-import { useApp, useEvents, useShopping } from '@/data/provider';
-import { cmpEvent, dayVerse, fullDate, longDay, parse, together, ymd } from '@/lib/dates';
+import { APP_NAME } from '@/config';
+import { useApp, useBirthdays, useEvents, useShopping } from '@/data/provider';
+import { upcomingBirthdays } from '@/lib/birthdays';
+import { cmpEvent, dayVerse, fullDate, longDay, parse, rel, together, ymd } from '@/lib/dates';
 import { shopEmoji } from '@/lib/shop-emoji';
 import { fonts, useTheme } from '@/theme';
 import { IconGear, IconPencil, IconPlus } from '@/ui/icons';
 import { EventRow } from '@/ui/event-row';
-import { Button, Card, CardHead, Press, Screen, T } from '@/ui/kit';
+import { Button, Card, CardHead, DateBadge, Press, Screen, T } from '@/ui/kit';
 
 export default function Start() {
   const { couple, profile } = useApp();
   const t = useTheme();
   const { items: events } = useEvents();
   const { items: shopping } = useShopping();
+  const { items: birthdays } = useBirthdays();
+  const nextBd = useMemo(() => upcomingBirthdays(birthdays)[0], [birthdays]);
 
   const todayIso = ymd(new Date());
   const upcoming = useMemo(() => events.filter((e) => e.date >= todayIso).sort(cmpEvent).slice(0, 4), [events, todayIso]);
@@ -38,6 +42,26 @@ export default function Start() {
             <T v="muted">Keine Termine geplant.</T>
             <View style={{ alignSelf: 'flex-start' }}>
               <Button small kind="ghost" title="Termin eintragen" icon={<IconPlus color={t.ink} size={18} />} onPress={() => router.push('/termin')} />
+            </View>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        <CardHead title="Nächster Geburtstag" action={<Button kind="link" title="Alle" onPress={() => router.navigate({ pathname: '/kalender', params: { seg: 'geb' } })} />} />
+        {nextBd ? (
+          <Press onPress={() => router.push({ pathname: '/geburtstag', params: { id: nextBd.id } })} scale={0.98} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+            <DateBadge date={nextBd.date} tone={{ soft: t.yellowSoft, ink: t.yellowInk }} />
+            <View style={{ flex: 1 }}>
+              <T v="big">{nextBd.name}</T>
+              <T v="muted">{nextBd.age ? `wird ${nextBd.age} · ` : ''}{rel(nextBd.days)}</T>
+            </View>
+          </Press>
+        ) : (
+          <>
+            <T v="muted">Noch keine Geburtstage eingetragen.</T>
+            <View style={{ alignSelf: 'flex-start' }}>
+              <Button small kind="ghost" title="Geburtstag eintragen" icon={<IconPlus color={t.ink} size={18} />} onPress={() => router.push('/geburtstag')} />
             </View>
           </>
         )}
@@ -134,11 +158,11 @@ function InviteCard({ code }: { code: string | null }) {
       <T v="h2">Lade deinen Schatz ein</T>
       {pretty ? (
         <>
-          <T v="muted">Dein Schatz installiert Wir Zwei, meldet sich an und gibt diesen Code ein. Er gilt 48 Stunden.</T>
+          <T v="muted">Dein Schatz installiert {APP_NAME}, meldet sich an und gibt diesen Code ein. Er gilt 48 Stunden.</T>
           <Text selectable style={{ fontFamily: fonts.displayHeavy, fontSize: 34, letterSpacing: 4, color: t.ink, textAlign: 'center' }} testID="invite-code-display">
             {pretty}
           </Text>
-          <Button title="Code teilen" onPress={() => Share.share({ message: `Komm zu mir in Wir Zwei! Mein Einladungscode: ${pretty}` }).catch(() => {})} />
+          <Button title="Code teilen" onPress={() => Share.share({ message: `Komm zu mir in ${APP_NAME}! Mein Einladungscode: ${pretty}` }).catch(() => {})} />
         </>
       ) : (
         <>

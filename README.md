@@ -9,6 +9,7 @@ Die Paar-App von Jan & Vanessa, neu gebaut als echte iPhone-App (React Native + 
 - Paar-Kopplung per Einladungscode (8 Zeichen, 48 Stunden gültig, max. 2 Personen)
 - **Start:** Zusammen seit, Jahrestag, Tagesvers, nächste Termine, offene Einkäufe
 - **Kalender:** Monatsansicht mit Farbpunkten pro Person, Termine anlegen/bearbeiten/löschen
+- **Geburtstage:** Liste mit Suche, nächster Geburtstag auf der Startseite, orange Punkte im Kalender, „wird 30“ bei bekanntem Jahr, 29. Februar wird in Nicht-Schaltjahren am 28. gefeiert
 - **Einkauf:** schnell eintragen („2 l Milch“ erkennt die Menge), abhaken, automatische Emojis
 - Live-Sync zwischen beiden Handys
 - Einstellungen: Profil, Paar verlassen, Abmelden, **Konto löschen**

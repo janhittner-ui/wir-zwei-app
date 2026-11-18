@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -57,6 +57,30 @@ export function checkEvent(e: EventInput): EventInput {
   const note = (e.note ?? '').trim() || null;
   if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
   return { title, date: e.date, time: normalizeTime(e.time), note, who: e.who || null };
+}
+
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+export function checkBirthday(b: BirthdayInput, now = new Date()): BirthdayInput {
+  const name = clean(b.name);
+  if (!name) throw new InputError('Bitte gib einen Namen ein.');
+  if (name.length > 80) throw new InputError('Der Name darf höchstens 80 Zeichen haben.');
+  const month = Number(b.month);
+  const day = Number(b.day);
+  if (!Number.isInteger(month) || month < 1 || month > 12) throw new InputError('Bitte wähle einen Monat.');
+  if (!Number.isInteger(day) || day < 1 || day > DAYS_IN_MONTH[month - 1]) {
+    throw new InputError(`Der Tag muss zwischen 1 und ${DAYS_IN_MONTH[month - 1]} liegen.`);
+  }
+  let year: number | null = null;
+  if (b.year !== null && b.year !== undefined && String(b.year).trim() !== '') {
+    year = Number(b.year);
+    if (!Number.isInteger(year) || year < 1900 || year > now.getFullYear()) {
+      throw new InputError(`Das Jahr muss zwischen 1900 und ${now.getFullYear()} liegen (oder leer bleiben).`);
+    }
+  }
+  const note = (b.note ?? '').trim() || null;
+  if (note && note.length > 300) throw new InputError('Die Notiz darf höchstens 300 Zeichen haben.');
+  return { name, month, day, year, note };
 }
 
 export function checkShopping(i: ShoppingInput): ShoppingInput {

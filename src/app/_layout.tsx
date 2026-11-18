@@ -73,6 +73,7 @@ function Root() {
         <Stack.Protected guard={status === 'ready'}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="termin" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="geburtstag" options={{ presentation: 'modal' }} />
           <Stack.Screen name="einstellungen" options={{ presentation: 'modal' }} />
         </Stack.Protected>
       </Stack>

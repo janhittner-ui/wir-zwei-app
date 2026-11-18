@@ -132,7 +132,9 @@ QR-Code wieder mit der Kamera scannen. Der Demo-Hinweis ist jetzt weg. Tippe auf
 ---
 
 ## Später: Neue Version holen
-Wenn ich etwas am Code geändert habe:
+Wenn es eine **neue Datenbank-Datei** gibt (neue Datei im Ordner `supabase\migrations`), muss sie **einmal** in Supabase ausgeführt werden, genau wie in Schritt 10: Datei öffnen, alles kopieren, im **SQL Editor** in eine **neue Abfrage** einfügen, **Run**. Ich sage dir jedes Mal, welche Datei neu ist. Die alten Dateien bitte nicht noch einmal ausführen.
+
+Danach (oder wenn es keine neue Datenbank-Datei gibt):
 ```powershell
 cd $HOME\Documents\wir-zwei-app
 git pull

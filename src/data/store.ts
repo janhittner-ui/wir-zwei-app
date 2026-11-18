@@ -1,8 +1,9 @@
 import type {
-  CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -40,6 +41,12 @@ export interface DataStore {
   updateEvent(id: string, e: EventInput): Promise<void>;
   deleteEvent(id: string): Promise<void>;
 
+  // Geburtstage
+  listBirthdays(): Promise<Birthday[]>;
+  addBirthday(b: BirthdayInput): Promise<Birthday>;
+  updateBirthday(id: string, b: BirthdayInput): Promise<void>;
+  deleteBirthday(id: string): Promise<void>;
+
   // Einkauf
   listShopping(): Promise<ShoppingItem[]>;
   addShopping(i: ShoppingInput): Promise<ShoppingItem>;
@@ -49,5 +56,5 @@ export interface DataStore {
   clearDoneShopping(): Promise<void>;
 
   /** Meldet Änderungen vom Partner (Live-Sync). */
-  subscribe(table: 'events' | 'shopping' | 'couple', cb: () => void): Unsubscribe;
+  subscribe(table: LiveTable, cb: () => void): Unsubscribe;
 }

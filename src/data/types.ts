@@ -40,6 +40,20 @@ export interface ShoppingItem {
   createdAt: string;
 }
 
+export interface Birthday {
+  id: string;
+  name: string;
+  /** 1–12 */
+  month: number;
+  /** 1–31 */
+  day: number;
+  /** Geburtsjahr, freiwillig */
+  year: number | null;
+  note: string | null;
+  createdBy: string | null;
+}
+export type BirthdayInput = Omit<Birthday, 'id' | 'createdBy'>;
+
 export type EventInput = Omit<CalendarEvent, 'id' | 'createdBy'>;
 export type ShoppingInput = Pick<ShoppingItem, 'text' | 'qty'>;
 

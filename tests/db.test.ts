@@ -133,6 +133,20 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(A, `update public.events set created_by = $2 where id = $1`, /immutable_column/, [ev.id, B]);
   });
 
+  test('Geburtstage: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
+    await as(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'Oma Helga', 3, 14, 1941)`, [couple]);
+    await as(B, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Schaltjahr-Kind', 2, 29)`, [couple]);
+    assert.equal((await as(B, 'select * from public.birthdays')).length, 2);
+    assert.equal((await as(C, 'select * from public.birthdays')).length, 0);
+    await fails(A, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'X', 4, 31)`, /birthdays_valid_day/, [couple]);
+    await fails(A, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'X', 13, 1)`, /check constraint/, [couple]);
+    await fails(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'X', 1, 1, 3000)`, /check constraint/, [couple]);
+    await fails(A, `insert into public.birthdays (couple_id, name, month, day) values ($1, '  ', 1, 1)`, /check constraint/, [couple]);
+    await fails(C, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Einbruch', 1, 1)`, /row-level security/, [couple]);
+    assert.equal((await as(C, `delete from public.birthdays returning id`)).length, 0);
+    await fails(null, 'select * from public.birthdays', /permission denied/);
+  });
+
   test('Einkaufsliste: Paar teilt sie, Fremde sehen nichts', async () => {
     await as(B, `insert into public.shopping_items (couple_id, text, qty) values ($1, 'Milch', '2 l')`, [couple]);
     await as(A, `update public.shopping_items set done = true`);
@@ -168,6 +182,7 @@ describe('Datenbank (strenge Prüfung)', () => {
     const left = await db.query<{ n: number }>(`select
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
+      (select count(*) from public.birthdays) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

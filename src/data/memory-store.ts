@@ -3,16 +3,16 @@
  * - Demo-Modus: App läuft sofort in Expo Go, auch ohne Supabase-Projekt (nichts wird gespeichert).
  * - Tests: mehrere Nutzer teilen sich ein MemoryBackend, alle Regeln der echten DB gelten hier auch.
  */
-import type { DataStore, Unsubscribe } from './store';
+import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
-type Table = 'events' | 'shopping' | 'couple';
+type Table = LiveTable;
 
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${(++seq).toString(16).padStart(12, '0')}`;
@@ -24,6 +24,7 @@ interface CoupleRow { id: string; togetherSince: string | null; names: string | 
 interface Invite { code: string; coupleId: string; expiresAt: number }
 type EventRow = CalendarEvent & { coupleId: string };
 type ShopRow = ShoppingItem & { coupleId: string };
+type BdRow = Birthday & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -34,6 +35,7 @@ export class MemoryBackend {
   invites = new Map<string, Invite>();
   events = new Map<string, EventRow>();
   shopping = new Map<string, ShopRow>();
+  birthdays = new Map<string, BdRow>();
   /** Nur für Tests: feste Uhrzeit */
   now = () => Date.now();
   /** Der Code, den die "E-Mail" enthalten würde */
@@ -178,6 +180,7 @@ export class MemoryStore implements DataStore {
       this.db.couples.delete(cid);
       for (const [k, v] of this.db.events) if (v.coupleId === cid) this.db.events.delete(k);
       for (const [k, v] of this.db.shopping) if (v.coupleId === cid) this.db.shopping.delete(k);
+      for (const [k, v] of this.db.birthdays) if (v.coupleId === cid) this.db.birthdays.delete(k);
       for (const [k, v] of this.db.invites) if (v.coupleId === cid) this.db.invites.delete(k);
     } else {
       this.db.emit('couple', cid);
@@ -193,6 +196,7 @@ export class MemoryStore implements DataStore {
     await this.leaveCouple();
     for (const e of this.db.events.values()) if (e.createdBy === me) e.createdBy = null;
     for (const s of this.db.shopping.values()) if (s.createdBy === me) s.createdBy = null;
+    for (const b of this.db.birthdays.values()) if (b.createdBy === me) b.createdBy = null;
     this.db.profiles.delete(me);
     this.db.users.delete(me);
     this.db.passwords.delete(me);
@@ -234,6 +238,36 @@ export class MemoryStore implements DataStore {
     if (!e) return;
     this.db.events.delete(id);
     this.db.emit('events', e.coupleId);
+  }
+
+  // ---------- Geburtstage ----------
+  private ownBirthday(id: string) {
+    const b = this.db.birthdays.get(id);
+    return b && b.coupleId === this.coupleId() ? b : null;
+  }
+  async listBirthdays() {
+    const cid = this.coupleId();
+    return [...this.db.birthdays.values()].filter((b) => b.coupleId === cid).map(({ coupleId, ...b }) => ({ ...b }));
+  }
+  async addBirthday(input: BirthdayInput) {
+    const cid = this.coupleId();
+    const row: BdRow = { ...checkBirthday(input), id: uuid(), coupleId: cid, createdBy: this.uid() };
+    this.db.birthdays.set(row.id, row);
+    this.db.emit('birthdays', cid);
+    const { coupleId, ...b } = row;
+    return { ...b };
+  }
+  async updateBirthday(id: string, input: BirthdayInput) {
+    const b = this.ownBirthday(id);
+    if (!b) return;
+    Object.assign(b, checkBirthday(input));
+    this.db.emit('birthdays', b.coupleId);
+  }
+  async deleteBirthday(id: string) {
+    const b = this.ownBirthday(id);
+    if (!b) return;
+    this.db.birthdays.delete(id);
+    this.db.emit('birthdays', b.coupleId);
   }
 
   // ---------- Einkauf ----------
