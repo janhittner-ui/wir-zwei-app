@@ -21,8 +21,18 @@ Im App Store nach **Expo Go** suchen und installieren.
 
 ## Teil B: Die App holen und im Demo-Modus starten
 
-### 4. PowerShell öffnen
-Startmenü öffnen, **PowerShell** tippen, Enter.
+### 4. PowerShell öffnen und einmalig freischalten
+Startmenü öffnen, **PowerShell** tippen, Enter. (Ein normales Fenster reicht, „Als Administrator“ ist nicht nötig.)
+
+Windows blockiert in PowerShell anfangs die Befehle `npm` und `npx` (Fehler *„Ausführung von Skripts auf diesem System deaktiviert“*). Einmalig diese Zeile eingeben, Enter, und die Frage mit **J** (bzw. **A** für „Alle“) bestätigen:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+Das gilt nur für dein Benutzerkonto und erlaubt Skripte von deinem eigenen Rechner. Danach PowerShell schließen und neu öffnen.
+
+*Alternative ohne Einstellung:* überall `npm.cmd` statt `npm` und `npx.cmd` statt `npx` schreiben, z. B. `npm.cmd install`.
 
 ### 5. Projekt herunterladen
 Diese Zeilen nacheinander eintippen (oder kopieren) und jeweils mit Enter bestätigen:
