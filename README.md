@@ -5,7 +5,7 @@ Die Paar-App von Jan & Vanessa, neu gebaut als echte iPhone-App (React Native + 
 **Los geht's:** [Anleitung für Windows](docs/ANLEITUNG-WINDOWS.md) · **Datenschutz:** [Übersicht und E2E-Empfehlung](docs/DATENSCHUTZ.md)
 
 ## Was schon geht
-- Anmelden per E-Mail-Code (kein Passwort)
+- Anmelden mit E-Mail + Passwort (Code per E-Mail vorbereitet, sobald eigener E-Mail-Versand steht)
 - Paar-Kopplung per Einladungscode (8 Zeichen, 48 Stunden gültig, max. 2 Personen)
 - **Start:** Zusammen seit, Jahrestag, Tagesvers, nächste Termine, offene Einkäufe
 - **Kalender:** Monatsansicht mit Farbpunkten pro Person, Termine anlegen/bearbeiten/löschen

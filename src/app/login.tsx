@@ -1,4 +1,8 @@
-/** Anmelden ohne Passwort: E-Mail eingeben, Code aus der E-Mail eintippen. */
+/**
+ * Anmelden mit E-Mail + Passwort. Das klappt ohne eigenen E-Mail-Versand.
+ * Sobald ein eigener SMTP-Versand eingerichtet ist (EXPO_PUBLIC_EMAIL_CODES=1), gibt es zusätzlich
+ * die Anmeldung per Einmal-Code aus der E-Mail.
+ */
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
@@ -8,15 +12,23 @@ import { useTheme } from '@/theme';
 import { Banner, Button, Card, Input, Screen, T } from '@/ui/kit';
 import { IconHeart } from '@/ui/icons';
 
+type Mode = 'signin' | 'signup' | 'confirm' | 'codeEmail' | 'code';
+const CODES_ENABLED = process.env.EXPO_PUBLIC_EMAIL_CODES === '1';
+
 export default function Login() {
   const { store } = useApp();
   const t = useTheme();
+  const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [step, setStep] = useState<'email' | 'code'>('email');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const go = (m: Mode) => {
+    setMode(m);
+    setErr(null);
+  };
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setErr(null);
@@ -28,6 +40,28 @@ export default function Login() {
       setBusy(false);
     }
   };
+
+  const signIn = () => run(() => store.signInWithPassword(email, password));
+  const signUp = () =>
+    run(async () => {
+      const r = await store.signUpWithPassword(email, password);
+      if (r === 'confirm') go('confirm');
+    });
+
+  const emailInput = (
+    <Input
+      label="E-Mail"
+      value={email}
+      onChangeText={setEmail}
+      autoCapitalize="none"
+      autoCorrect={false}
+      autoComplete="email"
+      keyboardType="email-address"
+      textContentType={mode === 'signup' ? 'username' : 'emailAddress'}
+      placeholder="name@beispiel.de"
+      testID="email"
+    />
+  );
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -42,52 +76,64 @@ export default function Login() {
         </View>
 
         {store.kind === 'demo' ? (
-          <Banner>Demo-Modus: Es ist noch kein Server eingerichtet. Nichts wird gespeichert. Der Code ist immer 123456.</Banner>
+          <Banner>Demo-Modus: Es ist noch kein Server eingerichtet. Nichts wird gespeichert. Leg einfach ein Konto mit irgendeiner E-Mail an.</Banner>
         ) : null}
 
         <Card>
-          {step === 'email' ? (
+          {mode === 'signin' || mode === 'signup' ? (
             <>
-              <T v="h2">Anmelden</T>
-              <T v="muted">Du bekommst einen Code per E-Mail. Ein Passwort brauchst du nicht.</T>
+              <T v="h2">{mode === 'signin' ? 'Anmelden' : 'Neues Konto'}</T>
+              {emailInput}
               <Input
-                label="E-Mail"
-                value={email}
-                onChangeText={setEmail}
+                label={mode === 'signup' ? 'Passwort (mindestens 8 Zeichen)' : 'Passwort'}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
                 autoCapitalize="none"
-                autoComplete="email"
-                keyboardType="email-address"
-                textContentType="emailAddress"
-                placeholder="name@beispiel.de"
-                returnKeyType="send"
-                onSubmitEditing={() => run(async () => { await store.sendLoginCode(email); setStep('code'); })}
-                testID="email"
+                autoCorrect={false}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                textContentType={mode === 'signup' ? 'newPassword' : 'password'}
+                passwordRules="minlength: 8;"
+                returnKeyType="go"
+                onSubmitEditing={mode === 'signin' ? signIn : signUp}
+                testID="password"
               />
               <Button
-                title="Code schicken"
+                title={mode === 'signin' ? 'Anmelden' : 'Konto anlegen'}
                 busy={busy}
-                testID="send-code"
-                onPress={() => run(async () => { await store.sendLoginCode(email); setStep('code'); })}
+                onPress={mode === 'signin' ? signIn : signUp}
+                testID={mode === 'signin' ? 'sign-in' : 'sign-up'}
               />
+              <Button
+                kind="link"
+                title={mode === 'signin' ? 'Noch kein Konto? Neu registrieren' : 'Schon ein Konto? Anmelden'}
+                onPress={() => go(mode === 'signin' ? 'signup' : 'signin')}
+                testID="switch-mode"
+              />
+              {CODES_ENABLED && mode === 'signin' ? <Button kind="link" title="Stattdessen Code per E-Mail" onPress={() => go('codeEmail')} /> : null}
+            </>
+          ) : mode === 'confirm' ? (
+            <>
+              <T v="h2">Fast geschafft</T>
+              <T v="muted">
+                Wir haben dir an {email.trim()} einen Bestätigungslink geschickt. Tippe auf den Link in der E-Mail und melde dich danach hier an.
+              </T>
+              <Button title="Zur Anmeldung" onPress={() => go('signin')} />
+            </>
+          ) : mode === 'codeEmail' ? (
+            <>
+              <T v="h2">Code per E-Mail</T>
+              {emailInput}
+              <Button title="Code schicken" busy={busy} onPress={() => run(async () => { await store.sendLoginCode(email); go('code'); })} />
+              <Button kind="link" title="Mit Passwort anmelden" onPress={() => go('signin')} />
             </>
           ) : (
             <>
               <T v="h2">Code eingeben</T>
               <T v="muted">Wir haben dir an {email.trim()} einen Code geschickt. Schau auch im Spam-Ordner nach.</T>
-              <Input
-                label="Code aus der E-Mail"
-                value={code}
-                onChangeText={setCode}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                autoComplete="one-time-code"
-                maxLength={10}
-                placeholder="123456"
-                testID="code"
-                onSubmitEditing={() => run(() => store.verifyLoginCode(email, code))}
-              />
-              <Button title="Anmelden" busy={busy} testID="verify" onPress={() => run(() => store.verifyLoginCode(email, code))} />
-              <Button title="Andere E-Mail" kind="link" onPress={() => { setStep('email'); setCode(''); setErr(null); }} />
+              <Input label="Code aus der E-Mail" value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" maxLength={10} placeholder="123456" />
+              <Button title="Anmelden" busy={busy} onPress={() => run(() => store.verifyLoginCode(email, code))} />
+              <Button kind="link" title="Andere E-Mail" onPress={() => { go('codeEmail'); setCode(''); }} />
             </>
           )}
           {err ? <Banner warn>{err}</Banner> : null}

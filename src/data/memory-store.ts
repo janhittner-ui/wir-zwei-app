@@ -8,7 +8,7 @@ import type {
   CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkShopping,
+  checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -27,6 +27,7 @@ type ShopRow = ShoppingItem & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
+  passwords = new Map<string, string>(); // nur Demo/Test, nie echt so speichern
   profiles = new Map<string, Profile>();
   couples = new Map<string, CoupleRow>();
   members = new Map<string, string>(); // userId -> coupleId
@@ -71,6 +72,22 @@ export class MemoryStore implements DataStore {
   private setSession(s: Session | null) {
     this.session = s;
     this.sessionListeners.forEach((cb) => cb(s));
+  }
+  async signUpWithPassword(email: string, password: string) {
+    const e = checkEmail(email);
+    checkPassword(password);
+    if ([...this.db.users.values()].includes(e)) fail('User already registered');
+    const id = uuid();
+    this.db.users.set(id, e);
+    this.db.passwords.set(id, password);
+    this.setSession({ userId: id, email: e });
+    return 'signedIn' as const;
+  }
+  async signInWithPassword(email: string, password: string) {
+    const e = checkEmail(email);
+    const id = [...this.db.users].find(([, m]) => m === e)?.[0];
+    if (!id || this.db.passwords.get(id) !== password) fail('Invalid login credentials');
+    this.setSession({ userId: id!, email: e });
   }
   async sendLoginCode(email: string) {
     this.pendingEmail = checkEmail(email);
@@ -178,6 +195,7 @@ export class MemoryStore implements DataStore {
     for (const s of this.db.shopping.values()) if (s.createdBy === me) s.createdBy = null;
     this.db.profiles.delete(me);
     this.db.users.delete(me);
+    this.db.passwords.delete(me);
     this.setSession(null);
   }
 

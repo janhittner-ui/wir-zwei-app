@@ -87,6 +87,12 @@ export function checkEmail(raw: string): string {
   return e;
 }
 
+export function checkPassword(raw: string): string {
+  if (raw.length < 8) throw new InputError('Das Passwort braucht mindestens 8 Zeichen.');
+  if (raw.length > 72) throw new InputError('Das Passwort darf höchstens 72 Zeichen haben.');
+  return raw;
+}
+
 export function checkLoginCode(raw: string): string {
   const c = raw.replace(/\D/g, '');
   if (c.length < 6 || c.length > 10) throw new InputError('Der Code besteht aus Ziffern aus der E-Mail.');

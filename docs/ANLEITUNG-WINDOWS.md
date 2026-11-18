@@ -68,7 +68,7 @@ Es erscheint ein großer QR-Code in der PowerShell.
 ### 8. Auf dem iPhone öffnen
 Öffne die normale **Kamera-App** auf dem iPhone, halte sie auf den QR-Code und tippe auf **In Expo Go öffnen**.
 
-Die App startet im **Demo-Modus** (blauer Hinweis oben). Der Anmeldecode ist dort immer `123456`. Es wird nichts gespeichert.
+Die App startet im **Demo-Modus** (blauer Hinweis oben). Tippe auf **Neu registrieren** und leg ein Konto mit irgendeiner E-Mail und einem Passwort an. Es wird nichts gespeichert.
 
 **Klappt es nicht?** Drücke in der PowerShell `Strg + C` und starte so:
 ```powershell
@@ -94,19 +94,15 @@ Das funktioniert auch, wenn das WLAN den direkten Weg blockiert.
 3. Im SQL Editor einfügen und unten rechts auf **Run** klicken.
 4. Es sollte **Success. No rows returned** erscheinen.
 
-### 11. Anmelde-E-Mail mit Code einstellen
-Die App schickt einen Zahlencode statt eines Links.
-1. Links **Authentication** → **Emails** (bzw. **Email Templates**) öffnen.
-2. Die Vorlage **Magic Link** auswählen.
-3. **Subject:** `Dein Anmeldecode für Wir Zwei`
-4. **Body** komplett ersetzen durch:
-   ```html
-   <h2>Dein Code für Wir Zwei</h2>
-   <p>Gib diesen Code in der App ein:</p>
-   <p style="font-size:28px;font-weight:bold;letter-spacing:4px">{{ .Token }}</p>
-   <p>Der Code gilt eine Stunde. Wenn du dich nicht anmelden wolltest, ignoriere diese E-Mail.</p>
-   ```
+### 11. E-Mail-Bestätigung ausschalten (nur für die Testphase)
+Im kostenlosen Plan kann man die E-Mail-Vorlagen nicht ändern und Supabase verschickt nur sehr wenige E-Mails. Darum meldet ihr euch zum Testen mit **E-Mail und Passwort** an, ganz ohne E-Mail.
+1. Links **Authentication** → **Sign In / Providers** (bzw. **Providers**) öffnen.
+2. Auf **Email** klicken.
+3. Den Schalter **Confirm email** **ausschalten**.
+4. Falls es das Feld **Minimum password length** gibt: `8` eintragen.
 5. **Save** klicken.
+
+Die E-Mail-Vorlagen unter „Emails“ musst du nicht anfassen. Vor der Veröffentlichung richten wir einen eigenen E-Mail-Versand ein und schalten die Bestätigung wieder ein.
 
 ### 12. Zugangsdaten in die App eintragen
 1. In Supabase links **Project Settings** (Zahnrad) → **API Keys** öffnen. Den **Publishable key** kopieren (beginnt mit `sb_publishable_`). Falls dort nur „anon key“ steht, nimm den.
@@ -124,11 +120,11 @@ Den **Secret key** oder **service_role key** bitte niemals in die App oder in di
 ```powershell
 npx expo start -c
 ```
-QR-Code wieder mit der Kamera scannen. Der Demo-Hinweis ist jetzt weg. Melde dich mit deiner echten E-Mail an.
+QR-Code wieder mit der Kamera scannen. Der Demo-Hinweis ist jetzt weg. Tippe auf **Neu registrieren** und leg dein Konto mit deiner E-Mail und einem Passwort an (mindestens 8 Zeichen).
 
 ### 14. Vanessa dazuholen
 1. Du: anmelden, Namen eingeben, **Gemeinsames Konto anlegen**. Auf der Startseite steht ein Code wie `K7MB-Q2XD`.
-2. Vanessa: Expo Go installieren, dort mit **deinem** Expo-Konto anmelden, denselben QR-Code scannen (dein Laptop muss dabei laufen), mit ihrer E-Mail anmelden, **Ich habe einen Code** wählen und den Code eingeben.
+2. Vanessa: Expo Go installieren, dort mit **deinem** Expo-Konto anmelden, denselben QR-Code scannen (dein Laptop muss dabei laufen), mit ihrer E-Mail und einem eigenen Passwort **neu registrieren**, **Ich habe einen Code** wählen und den Code eingeben.
 3. Fertig: Termine und Einkaufsliste erscheinen jetzt sofort auf beiden Handys.
 
 ---
@@ -143,6 +139,6 @@ npx expo start -c
 ```
 
 ## Gut zu wissen
-- **Supabase verschickt im kostenlosen Plan nur wenige E-Mails pro Stunde.** Zum Testen reicht das. Vor der Veröffentlichung richten wir einen eigenen E-Mail-Versand (in der EU) ein.
+- **Solange „Confirm email“ aus ist, prüft niemand, ob eine E-Mail-Adresse echt ist.** Für eure Testphase ist das in Ordnung. Vor der Veröffentlichung kommen eigener E-Mail-Versand, Bestätigung und „Passwort vergessen“ dazu.
 - Kostenlose Supabase-Projekte werden nach einer Woche ohne Nutzung pausiert. Auf supabase.com kannst du sie mit einem Klick wieder starten.
 - In Expo Go läuft die App nur, solange `npx expo start` auf dem Laptop läuft. Für eine richtige App auf dem Home-Bildschirm (ohne Laptop) bauen wir später mit EAS eine Testversion für TestFlight.

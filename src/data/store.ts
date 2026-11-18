@@ -12,9 +12,13 @@ export type Unsubscribe = () => void;
 export interface DataStore {
   readonly kind: 'supabase' | 'demo';
 
-  // Anmeldung (E-Mail + Einmal-Code, kein Passwort)
+  // Anmeldung: E-Mail + Passwort (funktioniert ohne eigenen E-Mail-Versand).
   getSession(): Promise<Session | null>;
   onSessionChange(cb: (s: Session | null) => void): Unsubscribe;
+  /** Legt ein Konto an. 'confirm' = Supabase verlangt erst die Bestätigung per E-Mail-Link. */
+  signUpWithPassword(email: string, password: string): Promise<'signedIn' | 'confirm'>;
+  signInWithPassword(email: string, password: string): Promise<void>;
+  // Alternative: Einmal-Code per E-Mail (braucht eigenen SMTP-Versand mit {{ .Token }} in der Vorlage)
   sendLoginCode(email: string): Promise<void>;
   verifyLoginCode(email: string, code: string): Promise<void>;
   signOut(): Promise<void>;

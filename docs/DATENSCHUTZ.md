@@ -7,13 +7,13 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 
 | Daten | Wozu | Wo |
 |---|---|---|
-| E-Mail-Adresse | Anmeldung per Code | Supabase Auth (Frankfurt) |
+| E-Mail-Adresse, Passwort (nur als sicherer Hash) | Anmeldung | Supabase Auth (Frankfurt) |
 | Vorname, Farbe (blau/rosa) | Zeigen, wer was eingetragen hat | Tabelle `profiles` |
 | „Zusammen seit“, Paar-Namen | Startseite | Tabelle `couples` |
 | Termine (Titel, Datum, Uhrzeit, Notiz, für wen) | Kalender | Tabelle `events` |
 | Einkaufseinträge | Einkaufsliste | Tabelle `shopping_items` |
 
-Nicht gespeichert: Passwörter (es gibt keine), Telefonnummer, Standort, Kontakte, Geräte-IDs, Werbe-IDs, Nutzungsstatistiken.
+Nicht gespeichert: Passwörter im Klartext, Telefonnummer, Standort, Kontakte, Geräte-IDs, Werbe-IDs, Nutzungsstatistiken.
 
 ## Was die App bewusst nicht macht
 - **Kein Tracking, keine Analyse-Tools, keine Werbung, keine Crash-Reporter von Drittanbietern.** Es ist kein solches Paket installiert.
@@ -50,9 +50,10 @@ Wann es sich lohnt: wenn ihr später sehr persönliche Inhalte anbietet (z. B. T
 - [ ] Mit Supabase den **Auftragsverarbeitungsvertrag (DPA/AVV)** abschließen (im Dashboard unter Organization → Legal/Documents).
       Hinweis: Supabase ist ein US-Unternehmen; die Daten liegen in Frankfurt, der Vertrag enthält EU-Standardvertragsklauseln. Das in der Datenschutzerklärung nennen.
 - [ ] **Eigenen E-Mail-Versand** einrichten (SMTP eines EU-Anbieters, z. B. Brevo oder Mailjet, beide Frankreich) statt des Supabase-Testversands. Ebenfalls AVV abschließen.
+      Danach: „Confirm email“ wieder einschalten, Vorlagen auf Deutsch, „Passwort vergessen“ einbauen, optional Anmeldung per Code (`EXPO_PUBLIC_EMAIL_CODES=1`, Vorlage mit `{{ .Token }}`).
 - [ ] Datenschutzerklärung + Impressum als Webseite, Link in der App (Einstellungen) und im App Store.
 - [ ] Apple **App Privacy** („Datenschutz-Etiketten“) ausfüllen, voraussichtlich:
   - Kontaktinformationen → E-Mail-Adresse: *mit dir verknüpft*, Zweck *App-Funktionalität*, **kein Tracking**
   - Benutzerinhalte → Sonstige Benutzerinhalte: *mit dir verknüpft*, Zweck *App-Funktionalität*, **kein Tracking**
   - Alles andere: nicht erhoben
-- [ ] Für die Apple-Prüfung ein Test-Konto bereitstellen (Prüfer können keine E-Mail-Codes empfangen). Lösung bauen wir vor dem Upload ein.
+- [ ] Für die Apple-Prüfung ein Test-Konto (E-Mail + Passwort) anlegen und in App Store Connect hinterlegen.

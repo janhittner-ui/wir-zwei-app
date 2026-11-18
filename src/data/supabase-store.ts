@@ -13,7 +13,7 @@ import type {
   CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkShopping,
+  checkColor, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -68,6 +68,17 @@ export class SupabaseStore implements DataStore {
       cb(s?.user ? { userId: s.user.id, email: s.user.email ?? null } : null);
     });
     return () => data.subscription.unsubscribe();
+  }
+  async signUpWithPassword(email: string, password: string) {
+    const { data, error } = await this.sb.auth.signUp({ email: checkEmail(email), password: checkPassword(password) });
+    if (error) throw error;
+    // Bei bestehender, bestätigter E-Mail liefert Supabase (gegen Konten-Ausspähen) einen Nutzer ohne Identitäten.
+    if (data.user && data.user.identities && data.user.identities.length === 0) throw new Error('User already registered');
+    return data.session ? 'signedIn' : 'confirm';
+  }
+  async signInWithPassword(email: string, password: string) {
+    const { error } = await this.sb.auth.signInWithPassword({ email: checkEmail(email), password });
+    if (error) throw error;
   }
   async sendLoginCode(email: string) {
     const { error } = await this.sb.auth.signInWithOtp({ email: checkEmail(email), options: { shouldCreateUser: true } });

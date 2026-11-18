@@ -14,8 +14,7 @@ import { shopEmoji } from '../src/lib/shop-emoji';
 import { VERSES } from '../src/lib/verses';
 
 async function login(store: MemoryStore, email: string) {
-  await store.sendLoginCode(email);
-  await store.verifyLoginCode(email, '123 456');
+  await store.signUpWithPassword(email, 'geheim123');
 }
 
 describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
@@ -25,9 +24,20 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
   const fremd = new MemoryStore(db);
 
   test('Anmeldung: falscher Code wird abgelehnt', async () => {
-    await jan.sendLoginCode('jan@example.org');
-    await assert.rejects(() => jan.verifyLoginCode('jan@example.org', '000000'), /invalid/);
+    await jan.sendLoginCode('code@example.org');
+    await assert.rejects(() => jan.verifyLoginCode('code@example.org', '000000'), /invalid/);
     assert.equal(await jan.getSession(), null);
+  });
+
+  test('Anmeldung mit Passwort: Regeln und Fehlermeldungen', async () => {
+    const s = new MemoryStore(db);
+    await assert.rejects(() => s.signUpWithPassword('pw@example.org', 'kurz'), /mindestens 8/);
+    await s.signUpWithPassword('PW@example.org', 'richtig123');
+    await s.signOut();
+    await assert.rejects(() => s.signUpWithPassword('pw@example.org', 'nochmal123'), (e) => /schon ein Konto/.test(friendlyError(e)));
+    await assert.rejects(() => s.signInWithPassword('pw@example.org', 'falsch123'), (e) => /stimmt nicht/.test(friendlyError(e)));
+    await s.signInWithPassword(' pw@example.org ', 'richtig123');
+    assert.equal((await s.getSession())?.email, 'pw@example.org');
   });
 
   test('Kopplung per Code und Live-Sync', async () => {
