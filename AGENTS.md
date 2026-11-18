@@ -40,7 +40,8 @@ Docs: https://docs.expo.dev/eas/index.md
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
 
-## Wir Zwei: Projektregeln
+## Paarweise (früher Wir Zwei): Projektregeln
+- App-Name nur in `src/config.ts` und `app.json`. Repo heißt weiterhin wir-zwei-app.
 - Sprache der App und der Doku: Deutsch, einfach erklärt. Jan arbeitet unter Windows ohne Mac, testet per Expo Go auf dem iPhone.
 - Datenzugriff nur über `src/data/store.ts` (DataStore). Jede neue Funktion in `SupabaseStore` UND `MemoryStore` bauen, Prüfungen in `validate.ts` spiegeln die DB-Constraints.
 - Jede DB-Änderung als neue Datei in `supabase/migrations/`, mit RLS, und in `tests/db.test.ts` testen (PGlite mit nachgebauter Supabase-Umgebung). Vor jedem Commit: `npm test` und `npm run typecheck`.

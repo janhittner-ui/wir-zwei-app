@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
-import { APP_NAME } from '@/config';
+import { APP_NAME, APP_NAME_PARTS } from '@/config';
 import { friendlyError } from '@/data/errors';
 import { useApp } from '@/data/provider';
 import { useTheme } from '@/theme';
@@ -72,7 +72,10 @@ export default function Login() {
             <IconHeart color={t.blue} size={34} />
             <IconHeart color={t.pink} size={34} />
           </View>
-          <T v="display">{APP_NAME}</T>
+          <T v="display" accessibilityLabel={APP_NAME}>
+            <T v="display" style={{ color: t.blue }}>{APP_NAME_PARTS[0]}</T>
+            <T v="display" style={{ color: t.pink }}>{APP_NAME_PARTS[1]}</T>
+          </T>
           <T v="muted" style={{ textAlign: 'center' }}>Euer gemeinsamer Ort für Termine, Einkauf und alles, was euch wichtig ist.</T>
         </View>
 

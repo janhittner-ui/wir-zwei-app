@@ -1,6 +1,6 @@
-# Wir Zwei
+# Paarweise
 
-Die Paar-App von Jan & Vanessa, neu gebaut als echte iPhone-App (React Native + Expo) mit Supabase (EU) als Datenbank.
+Die Paar-App von Jan & Vanessa (früher „Wir Zwei“), neu gebaut als echte iPhone-App (React Native + Expo) mit Supabase (EU) als Datenbank.
 
 **Los geht's:** [Anleitung für Windows](docs/ANLEITUNG-WINDOWS.md) · **Datenschutz:** [Übersicht und E2E-Empfehlung](docs/DATENSCHUTZ.md)
 
