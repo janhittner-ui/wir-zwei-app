@@ -11,7 +11,7 @@ Stand: [Datum]
 1.1 Diese Bedingungen gelten für die Nutzung der App „Paarweise“ (im Folgenden „App“) und aller darin angebotenen
 Funktionen, auch des kostenpflichtigen Abos „Paarweise Plus“.
 
-1.2 Anbieter ist Jan Julius Hittner, Hoherainstraße 1, 35075 Gladenbach, E-Mail: Janjulius2003@web.de
+1.2 Anbieter ist Jan Julius Hittner, JJ XPress, Hoherainstraße 1, 35075 Gladenbach, E-Mail: Janjulius2003@web.de
 (im Folgenden „wir“). Die vollständigen Angaben stehen im Impressum.
 
 1.3 Die App richtet sich an Verbraucherinnen und Verbraucher. Abweichende Bedingungen der Nutzer gelten nicht.

@@ -11,6 +11,7 @@
 **Anbieter der App „Paarweise“:**
 
 Jan Julius Hittner
+JJ XPress
 Hoherainstraße 1
 35075 Gladenbach
 Deutschland
