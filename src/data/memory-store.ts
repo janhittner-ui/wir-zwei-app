@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -31,6 +31,7 @@ type TripRow = Trip & { coupleId: string };
 type TripItemRow = TripItem & { coupleId: string };
 type PhotoRow = Photo & { coupleId: string };
 type MediaRow = Media & { coupleId: string };
+type GiftRow = Gift & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -48,6 +49,7 @@ export class MemoryBackend {
   tripItems = new Map<string, TripItemRow>();
   photos = new Map<string, PhotoRow>();
   media = new Map<string, MediaRow>();
+  gifts = new Map<string, GiftRow>();
   /** Bilddateien (Pfad → data:-URL), wie der private Speicher */
   files = new Map<string, string>();
   /** Nur für Tests: feste Uhrzeit */
@@ -200,6 +202,7 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.trips) if (v.coupleId === cid) this.db.trips.delete(k);
       for (const [k, v] of this.db.tripItems) if (v.coupleId === cid) this.db.tripItems.delete(k);
       for (const [k, v] of this.db.media) if (v.coupleId === cid) this.db.media.delete(k);
+      for (const [k, v] of this.db.gifts) if (v.coupleId === cid) this.db.gifts.delete(k);
       for (const [k, v] of this.db.photos) if (v.coupleId === cid) {
         this.db.photos.delete(k);
         this.db.files.delete(v.path);
@@ -225,6 +228,10 @@ export class MemoryStore implements DataStore {
     for (const r of this.db.tripItems.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.photos.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.media.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const [k, r] of this.db.gifts) {
+      if (r.forUser === me) this.db.gifts.delete(k); // Ideen für das gelöschte Konto verschwinden
+      else if (r.createdBy === me) r.createdBy = null;
+    }
     for (const n of this.db.notes.values()) {
       if (n.createdBy === me) n.createdBy = null;
       if (n.updatedBy === me) n.updatedBy = null;
@@ -520,6 +527,60 @@ export class MemoryStore implements DataStore {
     if (!r) return;
     this.db.media.delete(id);
     this.db.emit('media', r.coupleId);
+  }
+
+  // ---------- Geschenke ----------
+  /** Wie die Datenbank: nur eigenes Paar, und nie Ideen FÜR mich */
+  private ownGift(id: string) {
+    const r = this.db.gifts.get(id);
+    return r && r.coupleId === this.coupleId() && r.forUser !== this.uid() ? r : null;
+  }
+  private checkGiftTarget(cid: string, v: GiftInput) {
+    if (v.forUser && (v.forUser === this.uid() || this.db.members.get(v.forUser) !== cid)) throw new Error('gift_for_invalid');
+    if (v.wishId) {
+      const w = this.db.gifts.get(v.wishId);
+      if (!w || w.coupleId !== cid || w.kind !== 'wish') throw new Error('gift_wish_invalid');
+    }
+  }
+  async listGifts() {
+    const cid = this.coupleId();
+    const me = this.uid();
+    return [...this.db.gifts.values()].filter((r) => r.coupleId === cid && r.forUser !== me)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addGift(g: GiftInput) {
+    const cid = this.coupleId();
+    const v = checkGift(g);
+    this.checkGiftTarget(cid, v);
+    const row: GiftRow = {
+      id: uuid(), kind: v.kind, title: v.title, forUser: v.forUser, forName: v.forName, occasion: v.occasion, link: v.link, note: v.note,
+      done: false, wishId: v.wishId ?? null, coupleId: cid, createdBy: this.uid(), createdAt: this.stamp(),
+    };
+    this.db.gifts.set(row.id, row);
+    this.db.emit('gifts', cid);
+    const { coupleId, ...r } = row;
+    return { ...r };
+  }
+  async updateGift(id: string, g: GiftInput) {
+    const r = this.ownGift(id);
+    if (!r) return;
+    const v = checkGift({ ...g, kind: r.kind });
+    if (v.forUser !== r.forUser) this.checkGiftTarget(r.coupleId, { ...v, wishId: null });
+    Object.assign(r, { title: v.title, forUser: v.forUser, forName: v.forName, occasion: v.occasion, link: v.link, note: v.note });
+    this.db.emit('gifts', r.coupleId);
+  }
+  async setGiftDone(id: string, done: boolean) {
+    const r = this.ownGift(id);
+    if (!r || r.kind !== 'idea') return;
+    r.done = !!done;
+    this.db.emit('gifts', r.coupleId);
+  }
+  async deleteGift(id: string) {
+    const r = this.ownGift(id);
+    if (!r) return;
+    this.db.gifts.delete(id);
+    for (const x of this.db.gifts.values()) if (x.wishId === id) x.wishId = null;
+    this.db.emit('gifts', r.coupleId);
   }
 
   // ---------- Einkauf ----------

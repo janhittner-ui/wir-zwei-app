@@ -194,6 +194,30 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.equal((await jan.listMedia()).length, 1);
   });
 
+  test('Geschenke: Ideen für den Partner bleiben geheim, Wünsche sehen beide', async () => {
+    const janId = (await jan.getSession())!.userId;
+    const vId = (await vanessa.getSession())!.userId;
+    const secret = await jan.addGift({ kind: 'idea', title: 'Konzertkarten', forUser: vId, forName: 'ignoriert', occasion: 'Geburtstag', link: null, note: null });
+    assert.equal(secret.forName, null);
+    await jan.addGift({ kind: 'idea', title: 'Schal', forUser: null, forName: ' Mama ', occasion: null, link: null, note: null });
+    const wish = await vanessa.addGift({ kind: 'wish', title: 'Kochbuch', forUser: janId, forName: null, occasion: 'x', link: 'https://example.org', note: null });
+    assert.deepEqual([wish.forUser, wish.occasion], [null, null]);
+    const got = await jan.addGift({ kind: 'idea', title: 'Kochbuch', forUser: vId, forName: null, occasion: null, link: null, note: null, wishId: wish.id });
+    assert.equal(got.wishId, wish.id);
+    assert.deepEqual((await vanessa.listGifts()).map((g) => g.title).sort(), ['Kochbuch', 'Schal']); // nichts Geheimes
+    assert.equal((await jan.listGifts()).length, 4);
+    await vanessa.updateGift(secret.id, { kind: 'idea', title: 'gespickt', forUser: vId, forName: null, occasion: null, link: null, note: null });
+    await vanessa.deleteGift(secret.id);
+    assert.equal((await jan.listGifts()).find((g) => g.id === secret.id)?.title, 'Konzertkarten');
+    await jan.setGiftDone(secret.id, true);
+    assert.equal((await jan.listGifts()).find((g) => g.id === secret.id)?.done, true);
+    await assert.rejects(() => jan.addGift({ kind: 'idea', title: 'X', forUser: janId, forName: null, occasion: null, link: null, note: null }), /gift_for_invalid/);
+    await assert.rejects(() => jan.addGift({ kind: 'idea', title: 'X', forUser: null, forName: ' ', occasion: null, link: null, note: null }), /Für wen/);
+    await vanessa.deleteGift(wish.id);
+    assert.equal((await jan.listGifts()).find((g) => g.id === got.id)?.wishId, null);
+    assert.equal((await fremd.listGifts()).length, 0);
+  });
+
   test('Rezepte: anlegen, Favorit, geprüft, Fremde sehen nichts', async () => {
     const r = await jan.addRecipe({ title: '  Lasagne ', servings: 4, minutes: 60, ingredients: '500 g Hackfleisch\n\n', steps: '\n1. Ofen an\n', source: '' });
     assert.equal(r.title, 'Lasagne');

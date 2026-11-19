@@ -247,6 +247,35 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(null, 'select * from public.media', /permission denied/);
   });
 
+  test('Geschenke: Ideen für den Partner bleiben vor ihm verborgen, Wünsche sehen beide', async () => {
+    // A hat eine Idee für B (geheim) und eine für Mama (beide sehen sie)
+    const [secret] = await as<{ id: string }>(A, `insert into public.gifts (couple_id, kind, title, for_user, occasion) values ($1, 'idea', 'Konzertkarten', $2, 'Geburtstag') returning id`, [couple, B]);
+    await as(A, `insert into public.gifts (couple_id, kind, title, for_name) values ($1, 'idea', 'Schal', 'Mama')`, [couple]);
+    const [wish] = await as<{ id: string }>(B, `insert into public.gifts (couple_id, kind, title, link) values ($1, 'wish', 'Kochbuch', 'https://example.org/buch') returning id`, [couple]);
+    // A "besorgt" den Wunsch von B: neue geheime Idee mit Bezug
+    await as(A, `insert into public.gifts (couple_id, kind, title, for_user, wish_id) values ($1, 'idea', 'Kochbuch', $2, $3)`, [couple, B, wish.id]);
+    assert.equal((await as(A, 'select * from public.gifts')).length, 4);
+    const seenByB = await as<{ title: string }>(B, 'select title from public.gifts order by title');
+    assert.deepEqual(seenByB.map((r) => r.title), ['Kochbuch', 'Schal']); // nur der Wunsch selbst und die Idee für Mama
+    // B kann die geheime Idee weder ändern noch löschen
+    assert.equal((await as(B, `update public.gifts set title = 'x' where id = $1 returning id`, [secret.id])).length, 0);
+    assert.equal((await as(B, `delete from public.gifts where id = $1 returning id`, [secret.id])).length, 0);
+    // Regeln
+    await fails(A, `insert into public.gifts (couple_id, kind, title, for_user) values ($1, 'idea', 'X', $2)`, /row-level security|gift_for_invalid/, [couple, A]);
+    await fails(A, `insert into public.gifts (couple_id, kind, title, for_user) values ($1, 'idea', 'X', $2)`, /gift_for_invalid/, [couple, C]);
+    await fails(A, `insert into public.gifts (couple_id, kind, title) values ($1, 'idea', 'X')`, /gifts_target/, [couple]);
+    await fails(A, `insert into public.gifts (couple_id, kind, title, for_name) values ($1, 'wish', 'X', 'Mama')`, /gifts_target/, [couple]);
+    await fails(A, `insert into public.gifts (couple_id, kind, title, for_name, wish_id) values ($1, 'idea', 'X', 'Mama', $2)`, /gift_wish_invalid/, [couple, secret.id]);
+    await fails(B, `update public.gifts set for_user = $1 where id = $2`, /row-level security|gift_for_invalid/, [B, wish.id]);
+    // B löscht den Wunsch: As Idee bleibt, nur ohne Bezug
+    await as(B, `delete from public.gifts where id = $1`, [wish.id]);
+    const [kept] = await as<{ wish_id: string | null }>(A, `select wish_id from public.gifts where title = 'Kochbuch'`);
+    assert.equal(kept.wish_id, null);
+    assert.equal((await as(C, 'select * from public.gifts')).length, 0);
+    await fails(C, `insert into public.gifts (couple_id, kind, title) values ($1, 'wish', 'Einbruch')`, /row-level security/, [couple]);
+    await fails(null, 'select * from public.gifts', /permission denied/);
+  });
+
   test('Geburtstage: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
     await as(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'Oma Helga', 3, 14, 1941)`, [couple]);
     await as(B, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Schaltjahr-Kind', 2, 29)`, [couple]);
@@ -297,7 +326,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });
