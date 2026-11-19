@@ -9,13 +9,14 @@ import { Text } from 'react-native';
 import Album from '@/app/(tabs)/album';
 import Kalender from '@/app/(tabs)/kalender';
 import Listen from '@/app/(tabs)/listen';
+import Quiz from '@/app/(tabs)/quiz';
 import Rezepte from '@/app/(tabs)/rezepte';
 import { AREAS, type Area } from '@/lib/prefs';
 import { fonts, useTheme } from '@/theme';
 import { IconLeft } from '@/ui/icons';
 import { Press, ScreenTop } from '@/ui/kit';
 
-const SCREENS: Record<Area, ComponentType> = { kalender: Kalender, listen: Listen, rezepte: Rezepte, album: Album };
+const SCREENS: Record<Area, ComponentType> = { kalender: Kalender, listen: Listen, rezepte: Rezepte, album: Album, quiz: Quiz };
 
 export default function Bereich() {
   const { key } = useLocalSearchParams<{ key?: string }>();

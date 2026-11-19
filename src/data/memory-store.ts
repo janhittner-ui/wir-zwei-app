@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -32,6 +32,7 @@ type TripItemRow = TripItem & { coupleId: string };
 type PhotoRow = Photo & { coupleId: string };
 type MediaRow = Media & { coupleId: string };
 type GiftRow = Gift & { coupleId: string };
+type QuizRow = QuizAnswer & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -50,6 +51,7 @@ export class MemoryBackend {
   photos = new Map<string, PhotoRow>();
   media = new Map<string, MediaRow>();
   gifts = new Map<string, GiftRow>();
+  quiz = new Map<string, QuizRow>();
   prefs = new Map<string, Record<string, unknown>>(); // userId -> Einstellungen
   /** Bilddateien (Pfad → data:-URL), wie der private Speicher */
   files = new Map<string, string>();
@@ -236,6 +238,10 @@ export class MemoryStore implements DataStore {
     for (const r of this.db.tripItems.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.photos.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.media.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.quiz.values()) {
+      if (r.createdBy === me) r.createdBy = null;
+      if (r.player === me) r.player = null;
+    }
     for (const [k, r] of this.db.gifts) {
       if (r.forUser === me) this.db.gifts.delete(k); // Ideen für das gelöschte Konto verschwinden
       else if (r.createdBy === me) r.createdBy = null;
@@ -577,6 +583,24 @@ export class MemoryStore implements DataStore {
     if (v.forUser !== r.forUser) this.checkGiftTarget(r.coupleId, { ...v, wishId: null });
     Object.assign(r, { title: v.title, forUser: v.forUser, forName: v.forName, occasion: v.occasion, link: v.link, note: v.note });
     this.db.emit('gifts', r.coupleId);
+  }
+
+  // ---------- Paar-Quiz ----------
+  async listQuizAnswers() {
+    const cid = this.coupleId();
+    return [...this.db.quiz.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addQuizAnswer(a: QuizAnswerInput) {
+    const cid = this.coupleId();
+    const v = checkQuizAnswer(a);
+    if (!this.db.membersOf(cid).includes(v.player!)) fail('quiz_player_invalid');
+    if ([...this.db.quiz.values()].some((r) => r.coupleId === cid && r.round === v.round && r.questionId === v.questionId)) fail('quiz_once');
+    const row: QuizRow = { ...v, id: uuid(), coupleId: cid, createdBy: this.uid(), createdAt: this.stamp() };
+    this.db.quiz.set(row.id, row);
+    this.db.emit('quiz', cid);
+    const { coupleId, ...out } = row;
+    return out;
   }
   async setGiftDone(id: string, done: boolean) {
     const r = this.ownGift(id);

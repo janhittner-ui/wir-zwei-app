@@ -46,3 +46,4 @@ export const IconDown = (p: P) => <S width={2.2} {...p}><Path d="m5 9 7 7 7-7" /
 export const IconList = (p: P) => <S {...p}><Path d="M9 6h11M9 12h11M9 18h11" /><Path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2" /></S>;
 export const IconFork = (p: P) => <S {...p}><Path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4-3.5 7.5V13H17" /></S>;
 export const IconSliders = (p: P) => <S {...p}><Path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><Circle cx={16} cy={7} r={2} /><Circle cx={8} cy={17} r={2} /></S>;
+export const IconQuiz = (p: P) => <S {...p}><Path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v9a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4h0A2.5 2.5 0 0 1 4 14.5z" /><Path d="M10 8.2a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.3" /><Circle cx={12} cy={13.6} r={0.4} /></S>;

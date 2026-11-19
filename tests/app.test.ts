@@ -16,6 +16,8 @@ import { VERSES } from '../src/lib/verses';
 import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } from '../src/lib/trips';
 import type { Trip } from '../src/data/types';
 import { base64ToBytes } from '../src/lib/base64';
+import { questionOrder, questionText, quizState } from '../src/lib/quiz';
+import { QUIZ_QUESTIONS } from '../src/lib/quiz-questions';
 import { DEFAULT_PREFS, move, normalizePrefs, toggleHidden, visible } from '../src/lib/prefs';
 import { amountText, formatAmount, formatMinutes, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
 
@@ -427,8 +429,9 @@ describe('Anpassen (persönliche Einstellungen)', () => {
       fremd: { x: 1 },
     });
     // Reihenfolge bleibt, fehlende hinten dran, Doppeltes und Unbekanntes fliegt raus
-    assert.deepEqual(p.areas.order, ['album', 'listen', 'kalender', 'rezepte']);
-    assert.deepEqual(p.areas.hidden, ['rezepte']);
+    assert.deepEqual(p.areas.order, ['album', 'listen', 'kalender', 'rezepte', 'quiz']);
+    // neuer Bereich (Quiz) kommt bei bestehenden Einstellungen nicht ungefragt in die Tab-Leiste
+    assert.deepEqual(p.areas.hidden, ['rezepte', 'quiz']);
     assert.deepEqual(visible(p.areas), ['album', 'listen', 'kalender']);
     assert.equal(p.home.order[0], 'shopping');
     assert.equal(p.home.order.length, 6);
@@ -440,6 +443,12 @@ describe('Anpassen (persönliche Einstellungen)', () => {
     assert.equal(p.rezepte.sort, 'neu');
     assert.equal(p.album.cols, 3);
     assert.ok(!('fremd' in p));
+    // Standard und Obergrenze: höchstens 4 Bereiche neben Start
+    assert.deepEqual(visible(normalizePrefs({}).areas), ['kalender', 'listen', 'rezepte', 'album']);
+    assert.deepEqual(visible(normalizePrefs({ areas: { order: ['quiz', 'kalender', 'listen', 'rezepte', 'album'], hidden: [] } }).areas), ['quiz', 'kalender', 'listen', 'rezepte']);
+    const full = normalizePrefs({}).areas;
+    assert.equal(toggleHidden(full, 'quiz', 0, 4), full);
+    assert.deepEqual(visible(toggleHidden(toggleHidden(full, 'album', 0, 4), 'quiz', 0, 4)), ['kalender', 'listen', 'rezepte', 'quiz']);
     const id = '0f8c2f0a-1b2c-4d3e-8f90-123456789abc';
     assert.equal(normalizePrefs({ home: { heroPhotoId: id } }).home.heroPhotoId, id);
   });
@@ -473,5 +482,78 @@ describe('Anpassen (persönliche Einstellungen)', () => {
     await assert.rejects(() => a.saveMyPrefs([] as unknown as object), /prefs_invalid/);
     await a.deleteAccount();
     assert.equal(db.prefs.size, 0);
+  });
+});
+
+describe('Paar-Quiz', () => {
+  test('Fragenliste ist gültig (eindeutige ids im erlaubten Format)', () => {
+    assert.ok(QUIZ_QUESTIONS.length > 0);
+    assert.equal(new Set(QUIZ_QUESTIONS.map((q) => q.id)).size, QUIZ_QUESTIONS.length);
+    for (const q of QUIZ_QUESTIONS) {
+      assert.match(q.id, /^[a-z0-9-]{1,40}$/);
+      assert.ok(q.text.trim().length > 0);
+    }
+  });
+
+  test('Reihenfolge: gemischt, aber auf beiden Handys gleich; jede Runde anders', () => {
+    const a = questionOrder('paar-1', 1).map((q) => q.id);
+    assert.deepEqual(questionOrder('paar-1', 1).map((q) => q.id), a);
+    assert.deepEqual([...a].sort(), QUIZ_QUESTIONS.map((q) => q.id).sort());
+    assert.notDeepEqual(questionOrder('paar-1', 2).map((q) => q.id), a);
+  });
+
+  test('Abwechselnd dran, nächste offene Frage, Runde geschafft', async () => {
+    const db = new MemoryBackend();
+    const jan = new MemoryStore(db);
+    const van = new MemoryStore(db);
+    const fremd = new MemoryStore(db);
+    await login(jan, 'q1@example.org');
+    await login(van, 'q2@example.org');
+    await login(fremd, 'q3@example.org');
+    for (const [s, n] of [[jan, 'Jan'], [van, 'Vanessa'], [fremd, 'X']] as const) await s.saveMyProfile({ displayName: n, color: 'blue' });
+    await jan.createCouple();
+    await van.joinCouple(await jan.createInvite());
+    await fremd.createCouple();
+    const ids = (await jan.getMyCouple())!.members.map((m) => m.id).sort();
+    const seed = (await jan.getMyCouple())!.id;
+
+    let st = quizState(await jan.listQuizAnswers(), ids, seed);
+    assert.equal(st.player, ids[0]);
+    assert.equal(st.done, 0);
+    const realNow = db.now;
+    let t = 0;
+    db.now = () => 1_800_000_000_000 + t++ * 1000;
+    const first = st.question!;
+    await jan.addQuizAnswer({ round: st.round, questionId: first.id, player: st.player, answer: '  Lasagne ' });
+    st = quizState(await van.listQuizAnswers(), ids, seed);
+    assert.equal(st.player, ids[1]);
+    assert.notEqual(st.question!.id, first.id);
+    assert.equal(st.answers[0].answer, 'Lasagne');
+    // dieselbe Frage nicht zweimal, Fremde dürfen nicht mitspielen
+    await assert.rejects(() => van.addQuizAnswer({ round: 1, questionId: first.id, player: ids[1], answer: 'Pizza' }), /quiz_once/);
+    const fremdId = (await fremd.getMyProfile())!.id;
+    const open = st.question!.id;
+    await assert.rejects(() => jan.addQuizAnswer({ round: 1, questionId: open, player: fremdId, answer: 'x' }), /quiz_player_invalid/);
+    assert.equal((await fremd.listQuizAnswers()).length, 0);
+    // überspringen zählt auch
+    await van.addQuizAnswer({ round: 1, questionId: st.question!.id, player: st.player, answer: '' });
+    st = quizState(await jan.listQuizAnswers(), ids, seed);
+    assert.equal(st.answers[0].answer, null);
+    assert.equal(st.player, ids[0]);
+    while (st.question) {
+      await jan.addQuizAnswer({ round: st.round, questionId: st.question.id, player: st.player, answer: 'ok' });
+      st = quizState(await jan.listQuizAnswers(), ids, seed);
+    }
+    assert.equal(st.done, QUIZ_QUESTIONS.length);
+    // neue Runde
+    const r2 = quizState(await jan.listQuizAnswers(), ids, seed, 2);
+    assert.equal(r2.round, 2);
+    assert.equal(r2.done, 0);
+    assert.ok(r2.question);
+    db.now = realNow;
+  });
+
+  test('Namen in der Frage', () => {
+    assert.equal(questionText({ id: 'x', text: 'Was mag {partner}? Sagt {ich}.' }, 'Jan', 'Vanessa'), 'Was mag Vanessa? Sagt Jan.');
   });
 });

@@ -6,9 +6,13 @@
  * (alte Version, kaputte Daten, fremde Schlüssel), immer gültige Einstellungen.
  */
 
-export const AREAS = ['kalender', 'listen', 'rezepte', 'album'] as const;
+export const AREAS = ['kalender', 'listen', 'rezepte', 'album', 'quiz'] as const;
 export type Area = (typeof AREAS)[number];
-export const AREA_LABEL: Record<Area, string> = { kalender: 'Kalender', listen: 'Listen', rezepte: 'Rezepte', album: 'Album' };
+export const AREA_LABEL: Record<Area, string> = { kalender: 'Kalender', listen: 'Listen', rezepte: 'Rezepte', album: 'Album', quiz: 'Quiz' };
+/** Bereiche, die nach der ersten Version von „Anpassen“ dazukamen */
+const LATER_AREAS: readonly Area[] = ['quiz'];
+/** Neben Start passen höchstens 4 Bereiche in die Tab-Leiste (iPhone zeigt 5 Tabs) */
+export const MAX_TABS = 4;
 
 export const HOME_CARDS = ['hero', 'verse', 'upcoming', 'birthday', 'trip', 'shopping'] as const;
 export type HomeCard = (typeof HOME_CARDS)[number];
@@ -45,7 +49,7 @@ export interface Prefs {
 }
 
 export const DEFAULT_PREFS: Prefs = {
-  areas: { order: [...AREAS], hidden: [] },
+  areas: { order: [...AREAS], hidden: ['quiz'] },
   home: { order: [...HOME_CARDS], hidden: [], heroPhotoId: null },
   look: { mode: 'system', accent: 'blau' },
   lists: { order: [...LIST_SEGS], hidden: [] },
@@ -59,12 +63,22 @@ const pick = <K extends string>(all: readonly K[], v: unknown, fallback: K): K =
 const keys = <K extends string>(all: readonly K[], v: unknown): K[] =>
   Array.isArray(v) ? [...new Set(v.filter((x): x is K => all.includes(x as K)))] : [];
 
-function ordered<K extends string>(all: readonly K[], v: unknown, minVisible = 0): Ordered<K> {
+function ordered<K extends string>(all: readonly K[], v: unknown, minVisible = 0, maxVisible = Infinity, later: readonly K[] = []): Ordered<K> {
   const o = obj(v);
   const order = keys(all, o.order);
-  for (const k of all) if (!order.includes(k)) order.push(k);
   let hidden = keys(all, o.hidden);
+  const known = order.length > 0;
+  for (const k of all) {
+    if (order.includes(k)) continue;
+    order.push(k);
+    // später dazugekommene Bereiche erst einmal nicht in die Tab-Leiste
+    if (known && later.includes(k) && !hidden.includes(k)) hidden.push(k);
+  }
   if (all.length - hidden.length < minVisible) hidden = [];
+  for (const k of [...order].reverse()) {
+    if (order.length - hidden.length <= maxVisible) break;
+    if (!hidden.includes(k)) hidden.push(k);
+  }
   return { order, hidden };
 }
 
@@ -78,7 +92,7 @@ export function normalizePrefs(raw: unknown): Prefs {
   const rez = obj(r.rezepte);
   const alb = obj(r.album);
   return {
-    areas: ordered(AREAS, r.areas),
+    areas: ordered(AREAS, r.areas, 0, MAX_TABS, LATER_AREAS),
     home: { ...ordered(HOME_CARDS, home), heroPhotoId: typeof home.heroPhotoId === 'string' && UUID.test(home.heroPhotoId) ? home.heroPhotoId : null },
     look: { mode: pick(['system', 'light', 'dark'] as const, look.mode, 'system'), accent: pick(ACCENTS, look.accent, 'blau') },
     lists: ordered(LIST_SEGS, r.lists, 1),
@@ -92,8 +106,11 @@ export function normalizePrefs(raw: unknown): Prefs {
 export const visible = <K extends string>(o: Ordered<K>): K[] => o.order.filter((k) => !o.hidden.includes(k));
 
 /** Ein-/Ausblenden; bei minVisible bleibt mindestens so viel sichtbar */
-export function toggleHidden<K extends string>(o: Ordered<K>, k: K, minVisible = 0): Ordered<K> {
-  if (o.hidden.includes(k)) return { ...o, hidden: o.hidden.filter((x) => x !== k) };
+export function toggleHidden<K extends string>(o: Ordered<K>, k: K, minVisible = 0, maxVisible = Infinity): Ordered<K> {
+  if (o.hidden.includes(k)) {
+    if (o.order.length - o.hidden.length + 1 > maxVisible) return o;
+    return { ...o, hidden: o.hidden.filter((x) => x !== k) };
+  }
   if (o.order.length - o.hidden.length - 1 < minVisible) return o;
   return { ...o, hidden: [...o.hidden, k] };
 }

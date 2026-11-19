@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, GiftInput, MediaInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, GiftInput, MediaInput, QuizAnswerInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -241,4 +241,15 @@ export function checkPrefs(p: unknown): Record<string, unknown> {
   const json = JSON.stringify(p);
   if (new TextEncoder().encode(json).length > 8192) throw new Error('prefs_invalid');
   return JSON.parse(json);
+}
+
+/** Quiz-Antwort: leere Antwort = übersprungen */
+export function checkQuizAnswer(a: QuizAnswerInput): QuizAnswerInput {
+  const round = Number(a.round);
+  if (!Number.isInteger(round) || round < 1 || round > 1000) throw new InputError('Diese Runde gibt es nicht.');
+  if (!/^[a-z0-9-]{1,40}$/.test(a.questionId)) throw new InputError('Diese Frage gibt es nicht.');
+  if (!a.player) throw new InputError('Wer ist dran?');
+  const answer = (a.answer ?? '').trim() || null;
+  if (answer && answer.length > 1000) throw new InputError('Die Antwort darf höchstens 1000 Zeichen haben.');
+  return { round, questionId: a.questionId, player: a.player, answer };
 }

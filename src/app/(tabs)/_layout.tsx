@@ -14,6 +14,7 @@ const ICONS: Record<Area, string | { default: string; selected: string }> = {
   listen: { default: 'checklist', selected: 'checklist' },
   rezepte: 'fork.knife',
   album: { default: 'photo.on.rectangle', selected: 'photo.fill.on.rectangle.fill' },
+  quiz: { default: 'questionmark.bubble', selected: 'questionmark.bubble.fill' },
 };
 
 export default function TabsLayout() {
