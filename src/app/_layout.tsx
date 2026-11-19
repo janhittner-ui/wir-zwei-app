@@ -80,6 +80,8 @@ function Root() {
           <Stack.Screen name="notiz" options={{ presentation: 'modal' }} />
           <Stack.Screen name="rezept" />
           <Stack.Screen name="rezept-bearbeiten" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="reise" />
+          <Stack.Screen name="reise-bearbeiten" options={{ presentation: 'modal' }} />
           <Stack.Screen name="kochen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
           <Stack.Screen name="einstellungen" options={{ presentation: 'modal' }} />
         </Stack.Protected>

@@ -2,6 +2,8 @@ import { InputError } from './validate';
 
 /** Übersetzt technische Fehler in kurze deutsche Sätze. */
 const KNOWN: Record<string, string> = {
+  trip_mismatch: 'Diese Reise gibt es nicht mehr.',
+  trips_dates: 'Die Reisedaten passen nicht zusammen.',
   invalid_code: 'Dieser Einladungscode stimmt nicht oder ist abgelaufen.',
   couple_full: 'Ihr seid schon zu zweit.',
   already_in_couple: 'Du bist schon mit jemandem verbunden.',

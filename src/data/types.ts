@@ -87,6 +87,26 @@ export interface Recipe {
 }
 export type RecipeInput = Pick<Recipe, 'title' | 'servings' | 'minutes' | 'ingredients' | 'steps' | 'source'>;
 
+/** Reise: ohne Datum ein Wunschziel, mit Datum geplant. */
+export interface Trip {
+  id: string;
+  title: string;
+  /** ISO-Datum, null = Wunschziel */
+  startDate: string | null;
+  endDate: string | null;
+  note: string | null;
+  createdBy: string | null;
+}
+export type TripInput = Pick<Trip, 'title' | 'startDate' | 'endDate' | 'note'>;
+export interface TripItem {
+  id: string;
+  tripId: string;
+  text: string;
+  done: boolean;
+  createdBy: string | null;
+  createdAt: string;
+}
+
 export type EventInput = Omit<CalendarEvent, 'id' | 'createdBy'>;
 export type ShoppingInput = Pick<ShoppingItem, 'text' | 'qty'>;
 
