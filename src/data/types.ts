@@ -67,6 +67,26 @@ export interface Note {
 }
 export type NoteInput = Pick<Note, 'title' | 'body' | 'color'>;
 
+export interface Recipe {
+  id: string;
+  title: string;
+  /** Für wie viele Personen die Mengen gelten */
+  servings: number;
+  /** Zeit in Minuten (optional) */
+  minutes: number | null;
+  /** Eine Zutat pro Zeile, z. B. "200 g Mehl" */
+  ingredients: string;
+  /** Ein Schritt pro Zeile */
+  steps: string;
+  /** Woher das Rezept stammt (Link oder Buch), optional */
+  source: string | null;
+  favorite: boolean;
+  createdBy: string | null;
+  /** ISO-Zeitpunkt */
+  updatedAt: string;
+}
+export type RecipeInput = Pick<Recipe, 'title' | 'servings' | 'minutes' | 'ingredients' | 'steps' | 'source'>;
+
 export type EventInput = Omit<CalendarEvent, 'id' | 'createdBy'>;
 export type ShoppingInput = Pick<ShoppingItem, 'text' | 'qty'>;
 
