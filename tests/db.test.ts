@@ -231,6 +231,22 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal(bucket.public, false);
   });
 
+  test('Filme & Serien: Paar teilt die Liste, gesehen + Bewertung, Fremde sehen nichts', async () => {
+    const [m] = await as<{ id: string; done_at: string | null }>(A, `insert into public.media (couple_id, title, kind, platform) values ($1, 'Dune', 'film', 'Kino') returning id, done_at`, [couple]);
+    assert.equal(m.done_at, null);
+    const [d] = await as<{ done_at: string | null; rating: number }>(B, `update public.media set done = true, rating = 5 where id = $1 returning done_at, rating`, [m.id]);
+    assert.ok(d.done_at);
+    assert.equal(d.rating, 5);
+    const [u] = await as<{ done_at: string | null; rating: number | null }>(A, `update public.media set done = false where id = $1 returning done_at, rating`, [m.id]);
+    assert.deepEqual([u.done_at, u.rating], [null, null]);
+    await fails(A, `insert into public.media (couple_id, title, kind) values ($1, 'X', 'buch')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.media (couple_id, title, done, rating) values ($1, 'X', true, 6)`, /check constraint/, [couple]);
+    await fails(A, `insert into public.media (couple_id, title) values ($1, ' ')`, /check constraint/, [couple]);
+    assert.equal((await as(C, 'select * from public.media')).length, 0);
+    await fails(C, `insert into public.media (couple_id, title) values ($1, 'Einbruch')`, /row-level security/, [couple]);
+    await fails(null, 'select * from public.media', /permission denied/);
+  });
+
   test('Geburtstage: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
     await as(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'Oma Helga', 3, 14, 1941)`, [couple]);
     await as(B, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Schaltjahr-Kind', 2, 29)`, [couple]);
@@ -281,7 +297,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

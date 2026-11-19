@@ -14,7 +14,7 @@ Die Paar-App von Jan & Vanessa (früher „Wir Zwei“), neu gebaut als echte iP
 - **Rezepte:** eigener Tab mit Suche und Favoriten; Portionen umrechnen (Mengen wie „1/2 TL“ oder „1½ l“ werden erkannt), Zutaten mit einem Tipp auf die Einkaufsliste (ohne Doppelte), Kochmodus Schritt für Schritt mit großer Schrift, Bildschirm bleibt an
 - **Reisen** (Kalender, Reiter „Reisen“): geplante Reisen mit Countdown, Wunschziele ohne Datum, vergangene Reisen; je Reise eine gemeinsame Packliste (abhaken, wischen zum Löschen, Vorschläge); nächste Reise auf der Startseite
 - **Album** (eigener Tab): gemeinsame Fotos, nach Monat sortiert; bis zu 20 auf einmal aus der Mediathek oder direkt mit der Kamera; verkleinert und ohne Aufnahmeort gespeichert; großes Ansehen mit Wischen und Zoomen, Bildunterschrift, Löschen. Privater Speicher, Links laufen nach einer Stunde ab
-- **Listen** (Tab): Reiter Einkauf und Notizen
+- **Listen** (Tab): Reiter Einkauf, Notizen und **Filme & Serien** (gemeinsame Watchlist mit Filter Film/Serie, „Wo läuft es?“, abhaken wenn gesehen, 1–5 Sterne, wischen zum Löschen)
 - **Einkauf:** schnell eintragen („2 l Milch“ erkennt die Menge), abhaken, automatische Emojis
 - Live-Sync zwischen beiden Handys
 - Einstellungen: Profil, Paar verlassen, Abmelden, **Konto löschen**

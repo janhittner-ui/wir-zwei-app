@@ -36,3 +36,8 @@ export const IconMinus = (p: P) => <S width={2} {...p}><Path d="M5 12h14" /></S>
 export const IconSuitcase = (p: P) => <S {...p}><Rect x={3} y={7} width={18} height={13} rx={2.5} /><Path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 12.5h18" /></S>;
 export const IconTrash = (p: P) => <S {...p}><Path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5" /></S>;
 export const IconPhoto = (p: P) => <S {...p}><Rect x={3} y={4.5} width={18} height={15} rx={2.5} /><Circle cx={8.5} cy={9.5} r={1.6} /><Path d="m3.5 17 5-4.5 4 3.5 3-2.5 5 4" /></S>;
+export const IconStar = ({ color, size = 22, filled }: P & { filled?: boolean }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth={1.7} strokeLinejoin="round">
+    <Path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" />
+  </Svg>
+);

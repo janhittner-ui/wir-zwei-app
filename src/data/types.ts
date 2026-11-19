@@ -126,6 +126,24 @@ export interface PhotoUpload {
   caption?: string | null;
 }
 
+export type MediaKind = 'film' | 'serie';
+/** Film oder Serie auf der gemeinsamen Watchlist */
+export interface Media {
+  id: string;
+  title: string;
+  kind: MediaKind;
+  /** Wo es läuft, z. B. Netflix */
+  platform: string | null;
+  note: string | null;
+  done: boolean;
+  /** 1–5 Sterne, nur wenn gesehen */
+  rating: number | null;
+  doneAt: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+export type MediaInput = Pick<Media, 'title' | 'kind' | 'platform' | 'note' | 'rating'>;
+
 export type EventInput = Omit<CalendarEvent, 'id' | 'createdBy'>;
 export type ShoppingInput = Pick<ShoppingItem, 'text' | 'qty'>;
 

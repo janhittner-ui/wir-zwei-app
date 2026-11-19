@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -30,6 +30,7 @@ type RecipeRow = Recipe & { coupleId: string };
 type TripRow = Trip & { coupleId: string };
 type TripItemRow = TripItem & { coupleId: string };
 type PhotoRow = Photo & { coupleId: string };
+type MediaRow = Media & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -46,6 +47,7 @@ export class MemoryBackend {
   trips = new Map<string, TripRow>();
   tripItems = new Map<string, TripItemRow>();
   photos = new Map<string, PhotoRow>();
+  media = new Map<string, MediaRow>();
   /** Bilddateien (Pfad → data:-URL), wie der private Speicher */
   files = new Map<string, string>();
   /** Nur für Tests: feste Uhrzeit */
@@ -197,6 +199,7 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.recipes) if (v.coupleId === cid) this.db.recipes.delete(k);
       for (const [k, v] of this.db.trips) if (v.coupleId === cid) this.db.trips.delete(k);
       for (const [k, v] of this.db.tripItems) if (v.coupleId === cid) this.db.tripItems.delete(k);
+      for (const [k, v] of this.db.media) if (v.coupleId === cid) this.db.media.delete(k);
       for (const [k, v] of this.db.photos) if (v.coupleId === cid) {
         this.db.photos.delete(k);
         this.db.files.delete(v.path);
@@ -221,6 +224,7 @@ export class MemoryStore implements DataStore {
     for (const r of this.db.trips.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.tripItems.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.photos.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.media.values()) if (r.createdBy === me) r.createdBy = null;
     for (const n of this.db.notes.values()) {
       if (n.createdBy === me) n.createdBy = null;
       if (n.updatedBy === me) n.updatedBy = null;
@@ -475,6 +479,47 @@ export class MemoryStore implements DataStore {
       if (f && p.path.startsWith(`${cid}/`)) out[p.id] = f;
     }
     return out;
+  }
+
+  // ---------- Filme & Serien ----------
+  private ownMedia(id: string) {
+    const r = this.db.media.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  async listMedia() {
+    const cid = this.coupleId();
+    return [...this.db.media.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addMedia(m: MediaInput) {
+    const cid = this.coupleId();
+    const v = checkMedia(m);
+    const row: MediaRow = { ...v, rating: null, id: uuid(), coupleId: cid, done: false, doneAt: null, createdBy: this.uid(), createdAt: this.stamp() };
+    this.db.media.set(row.id, row);
+    this.db.emit('media', cid);
+    const { coupleId, ...r } = row;
+    return { ...r };
+  }
+  async updateMedia(id: string, m: MediaInput) {
+    const r = this.ownMedia(id);
+    if (!r) return;
+    const v = checkMedia(m);
+    Object.assign(r, v, { rating: r.done ? v.rating : null });
+    this.db.emit('media', r.coupleId);
+  }
+  async setMediaDone(id: string, done: boolean) {
+    const r = this.ownMedia(id);
+    if (!r) return;
+    if (done && !r.done) r.doneAt = this.stamp();
+    if (!done) Object.assign(r, { doneAt: null, rating: null });
+    r.done = !!done;
+    this.db.emit('media', r.coupleId);
+  }
+  async deleteMedia(id: string) {
+    const r = this.ownMedia(id);
+    if (!r) return;
+    this.db.media.delete(id);
+    this.db.emit('media', r.coupleId);
   }
 
   // ---------- Einkauf ----------

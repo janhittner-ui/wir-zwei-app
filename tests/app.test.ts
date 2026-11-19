@@ -174,6 +174,26 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.deepEqual((await vanessa.listPhotos()).map((x) => x.id), [p1.id]);
   });
 
+  test('Filme & Serien: Watchlist, gesehen, Bewertung nur wenn gesehen, Fremde sehen nichts', async () => {
+    const m = await jan.addMedia({ title: ' Dune ', kind: 'film', platform: ' Kino ', note: '', rating: 4 });
+    assert.deepEqual([m.title, m.platform, m.note, m.rating, m.done], ['Dune', 'Kino', null, null, false]);
+    await vanessa.updateMedia(m.id, { title: 'Dune', kind: 'film', platform: 'Kino', note: null, rating: 5 });
+    assert.equal((await jan.listMedia())[0].rating, null); // noch nicht gesehen
+    await vanessa.setMediaDone(m.id, true);
+    await jan.updateMedia(m.id, { title: 'Dune', kind: 'film', platform: 'Kino', note: null, rating: 5 });
+    const seen = (await vanessa.listMedia())[0];
+    assert.equal(seen.done, true);
+    assert.ok(seen.doneAt);
+    assert.equal(seen.rating, 5);
+    await jan.setMediaDone(m.id, false);
+    assert.equal((await jan.listMedia())[0].rating, null);
+    await assert.rejects(() => jan.addMedia({ title: 'X', kind: 'buch' as 'film', platform: null, note: null, rating: null }), /Film oder Serie/);
+    await assert.rejects(() => jan.updateMedia(m.id, { title: 'X', kind: 'film', platform: null, note: null, rating: 6 }), /1 bis 5/);
+    assert.equal((await fremd.listMedia()).length, 0);
+    await fremd.deleteMedia(m.id);
+    assert.equal((await jan.listMedia()).length, 1);
+  });
+
   test('Rezepte: anlegen, Favorit, geprüft, Fremde sehen nichts', async () => {
     const r = await jan.addRecipe({ title: '  Lasagne ', servings: 4, minutes: 60, ingredients: '500 g Hackfleisch\n\n', steps: '\n1. Ofen an\n', source: '' });
     assert.equal(r.title, 'Lasagne');
