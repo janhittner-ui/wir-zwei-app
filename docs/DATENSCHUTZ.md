@@ -65,7 +65,7 @@ Warum nicht gleich:
 Wann es sich lohnt: wenn ihr später sehr persönliche Inhalte anbietet (z. B. Tagebuch, Gebetsanliegen, private Notizen). Dann kann man **gezielt nur diese Bereiche** E2E-verschlüsseln, mit Wiederherstellungsschlüssel zum Ausdrucken. Die App spricht nur über eine Schnittstelle (`src/data/store.ts`) mit Daten, deshalb geht das später ohne die Bildschirme umzubauen. Das wäre auch ein gutes Premium- und Vertrauensargument.
 
 ## Vor der Veröffentlichung noch zu erledigen
-- [ ] Mit Supabase den **Auftragsverarbeitungsvertrag (DPA/AVV)** abschließen (im Dashboard unter Organization → Legal/Documents).
+- [x] **Auftragsverarbeitungsvertrag (DPA/AVV)** mit Supabase: gilt automatisch als Teil der Supabase-Nutzungsbedingungen (https://supabase.com/legal/dpa, Version 1 vom 1.8.2026, Vertragspartner Supabase Pte. Ltd., Singapur), keine Unterschrift nötig. Am 19.11.2026 geprüft.
       Hinweis: Supabase ist ein US-Unternehmen; die Daten liegen in Irland (EU, eu-west-1), der Vertrag enthält EU-Standardvertragsklauseln. Das in der Datenschutzerklärung nennen.
 - [ ] **Eigenen E-Mail-Versand** einrichten (SMTP eines EU-Anbieters, z. B. Brevo oder Mailjet, beide Frankreich) statt des Supabase-Testversands. Ebenfalls AVV abschließen.
       Danach: „Confirm email“ wieder einschalten, Vorlagen auf Deutsch, „Passwort vergessen“ einbauen, optional Anmeldung per Code (`EXPO_PUBLIC_EMAIL_CODES=1`, Vorlage mit `{{ .Token }}`).
