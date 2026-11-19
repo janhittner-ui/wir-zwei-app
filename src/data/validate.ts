@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, MediaInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -153,6 +153,20 @@ export function checkPhoto(p: PhotoUpload): PhotoUpload {
   // ca. 5 MB Datei (Base64 ist ein Drittel größer) – die App verkleinert vorher deutlich
   if (p.base64.length > 6_900_000) throw new InputError('Das Bild ist zu groß.');
   return { ...p, caption: checkCaption(p.caption) };
+}
+
+export function checkMedia(m: MediaInput): MediaInput {
+  const title = clean(m.title);
+  if (!title) throw new InputError('Wie heißt der Film oder die Serie?');
+  if (title.length > 120) throw new InputError('Der Titel darf höchstens 120 Zeichen haben.');
+  if (m.kind !== 'film' && m.kind !== 'serie') throw new InputError('Bitte Film oder Serie wählen.');
+  const platform = optional(m.platform);
+  if (platform && platform.length > 40) throw new InputError('„Wo läuft es?“ darf höchstens 40 Zeichen haben.');
+  const note = (m.note ?? '').trim() || null;
+  if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
+  const rating = m.rating == null ? null : Number(m.rating);
+  if (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) throw new InputError('Bewertung bitte mit 1 bis 5 Sternen.');
+  return { title, kind: m.kind, platform, note, rating };
 }
 
 export function checkShopping(i: ShoppingInput): ShoppingInput {

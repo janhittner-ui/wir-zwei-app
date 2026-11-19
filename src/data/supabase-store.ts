@@ -11,10 +11,10 @@ import { secureStorage } from './secure-storage';
 import { base64ToBytes } from '../lib/base64';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -63,6 +63,11 @@ const toPhoto = (r: Row): Photo => ({
   id: r.id, path: r.path, caption: r.caption, width: r.width, height: r.height, createdBy: r.created_by, createdAt: r.created_at,
 });
 const PHOTO_COLS = 'id, path, caption, width, height, created_by, created_at';
+const toMedia = (r: Row): Media => ({
+  id: r.id, title: r.title, kind: r.kind, platform: r.platform, note: r.note, done: r.done, rating: r.rating,
+  doneAt: r.done_at, createdBy: r.created_by, createdAt: r.created_at,
+});
+const MEDIA_COLS = 'id, title, kind, platform, note, done, rating, done_at, created_by, created_at';
 const NOTE_COLS = 'id, title, body, color, created_by, updated_by, updated_at';
 const BD_COLS = 'id, name, month, day, year, note, created_by';
 const eventRow = (e: EventInput) => ({ title: e.title, date: e.date, time: e.time, note: e.note, who: e.who });
@@ -396,9 +401,30 @@ export class SupabaseStore implements DataStore {
     return out;
   }
 
+  // ---------- Filme & Serien ----------
+  async listMedia() {
+    const r = must(await this.sb.from('media').select(MEDIA_COLS).eq('couple_id', await this.coupleId()).order('created_at')) as Row[];
+    return r.map(toMedia);
+  }
+  async addMedia(m: MediaInput) {
+    const v = checkMedia(m);
+    return toMedia(one(await this.sb.from('media').insert({ title: v.title, kind: v.kind, platform: v.platform, note: v.note, couple_id: await this.coupleId() })
+      .select(MEDIA_COLS).single()));
+  }
+  async updateMedia(id: string, m: MediaInput) {
+    const v = checkMedia(m);
+    must(await this.sb.from('media').update({ title: v.title, kind: v.kind, platform: v.platform, note: v.note, rating: v.rating }).eq('id', id));
+  }
+  async setMediaDone(id: string, done: boolean) {
+    must(await this.sb.from('media').update({ done }).eq('id', id));
+  }
+  async deleteMedia(id: string) {
+    must(await this.sb.from('media').delete().eq('id', id));
+  }
+
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());
