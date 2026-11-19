@@ -68,7 +68,7 @@ GANZ NACH EUREM GESCHMACK
 Unter „Anpassen“ wählt jeder für sich, welche Bereiche in der Leiste unten stehen und was auf der Startseite erscheint. Hell oder dunkel, ganz wie ihr mögt.
 
 DATENSCHUTZ
-Eure Daten liegen auf Servern in Frankfurt. Keine Werbung, kein Tracking. Nur ihr beide seht eure Einträge. Ihr könnt euer Konto jederzeit in der App löschen.
+Eure Daten liegen auf Servern in der EU (Irland). Keine Werbung, kein Tracking. Nur ihr beide seht eure Einträge. Ihr könnt euer Konto jederzeit in der App löschen.
 
 KOSTENLOS
 Paarweise ist komplett kostenlos, ohne Werbung und ohne versteckte Kosten. 🔁
@@ -141,6 +141,6 @@ Kurze Zeile oben auf jedem Bild, darunter der passende Bildschirm. Reihenfolge =
 
 Weitere Ideen zum Austauschen:
 - „Geschenkideen, die geheim bleiben“ (Geschenke)
-- „Sicher in Deutschland gespeichert“ (Einstellungen oder Datenschutz)
+- „Sicher in der EU gespeichert“ (Einstellungen oder Datenschutz)
 
 Format: Apple braucht Bilder für das 6,9-Zoll-iPhone (1320 × 2868 Pixel). Die kleineren Größen rechnet Apple selbst herunter.

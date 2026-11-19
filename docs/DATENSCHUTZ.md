@@ -7,7 +7,7 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 
 | Daten | Wozu | Wo |
 |---|---|---|
-| E-Mail-Adresse, Passwort (nur als sicherer Hash) | Anmeldung | Supabase Auth (Frankfurt) |
+| E-Mail-Adresse, Passwort (nur als sicherer Hash) | Anmeldung | Supabase Auth (Irland, eu-west-1) |
 | Vorname, Farbe (blau/rosa) | Zeigen, wer was eingetragen hat | Tabelle `profiles` |
 | „Zusammen seit“, Paar-Namen | Startseite | Tabelle `couples` |
 | Termine (Titel, Datum, Uhrzeit, Notiz, für wen) | Kalender | Tabelle `events` |
@@ -19,7 +19,7 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 | Meilensteine (Titel, Datum, Notiz, Verweis auf ein Album-Foto) | Zeitleiste und besondere Tage | Tabelle `milestones`, nur für euch beide |
 | Quiz-Antworten (welche Frage, wer dran war, Antwort) | Paar-Quiz | Tabelle `quiz_answers`, nur für euch beide |
 | Persönliche Einstellungen aus „Anpassen“ (Farbe, Tabs, Startseite, Schalter, gewähltes Paar-Bild) | Die App so zeigen, wie du sie eingestellt hast | Tabelle `user_prefs`, nur für dich selbst lesbar (auch nicht für den Partner); Kopie im Schlüsselbund des iPhones für einen schnellen Start |
-| Fotos (verkleinert auf max. 1600 Pixel, JPEG) und Bildunterschrift | Gemeinsames Album | **Privater** Speicher-Bucket `photos` (Frankfurt) + Tabelle `photos` |
+| Fotos (verkleinert auf max. 1600 Pixel, JPEG) und Bildunterschrift | Gemeinsames Album | **Privater** Speicher-Bucket `photos` (Irland) + Tabelle `photos` |
 
 Nicht gespeichert: Passwörter im Klartext, Telefonnummer, Standort (auch nicht aus Fotos: die App liest keine Foto-Zusatzdaten aus und speichert jedes Bild neu, ohne Aufnahmeort), Kontakte, Geräte-IDs, Werbe-IDs, Nutzungsstatistiken.
 
@@ -66,7 +66,7 @@ Wann es sich lohnt: wenn ihr später sehr persönliche Inhalte anbietet (z. B. T
 
 ## Vor der Veröffentlichung noch zu erledigen
 - [ ] Mit Supabase den **Auftragsverarbeitungsvertrag (DPA/AVV)** abschließen (im Dashboard unter Organization → Legal/Documents).
-      Hinweis: Supabase ist ein US-Unternehmen; die Daten liegen in Frankfurt, der Vertrag enthält EU-Standardvertragsklauseln. Das in der Datenschutzerklärung nennen.
+      Hinweis: Supabase ist ein US-Unternehmen; die Daten liegen in Irland (EU, eu-west-1), der Vertrag enthält EU-Standardvertragsklauseln. Das in der Datenschutzerklärung nennen.
 - [ ] **Eigenen E-Mail-Versand** einrichten (SMTP eines EU-Anbieters, z. B. Brevo oder Mailjet, beide Frankreich) statt des Supabase-Testversands. Ebenfalls AVV abschließen.
       Danach: „Confirm email“ wieder einschalten, Vorlagen auf Deutsch, „Passwort vergessen“ einbauen, optional Anmeldung per Code (`EXPO_PUBLIC_EMAIL_CODES=1`, Vorlage mit `{{ .Token }}`).
 - [ ] Datenschutzerklärung + Impressum + AGB als Webseite, Link in der App (Einstellungen) und im App Store. Entwürfe für Impressum und AGB: `docs/rechtliches/`.
