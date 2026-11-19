@@ -22,9 +22,9 @@ export const HOME_LABEL: Record<HomeCard, string> = {
   hero: 'Paar-Bild', verse: 'Tagesvers', upcoming: 'Demnächst', birthday: 'Nächster Geburtstag', trip: 'Nächste Reise', shopping: 'Einkauf', cycle: 'Zyklus',
 };
 
-export const LIST_SEGS = ['einkauf', 'notizen', 'filme', 'geschenke'] as const;
+export const LIST_SEGS = ['einkauf', 'notizen', 'filme', 'geschenke', 'dates'] as const;
 export type ListSeg = (typeof LIST_SEGS)[number];
-export const LIST_LABEL: Record<ListSeg, string> = { einkauf: 'Einkauf', notizen: 'Notizen', filme: 'Filme', geschenke: 'Geschenke' };
+export const LIST_LABEL: Record<ListSeg, string> = { einkauf: 'Einkauf', notizen: 'Notizen', filme: 'Filme', geschenke: 'Geschenke', dates: 'Dates' };
 
 export const ACCENTS = ['blau', 'rosa', 'lila', 'gruen', 'petrol', 'orange'] as const;
 export type AccentKey = (typeof ACCENTS)[number];

@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, CyclePeriodInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, DateIdeaInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, CyclePeriodInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -272,6 +272,26 @@ export function checkMilestone(m: MilestoneInput, now = new Date()): MilestoneIn
   if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
   const photoId = m.photoId && UUID_RE.test(m.photoId) ? m.photoId : null;
   return { title, icon, date, note, photoId };
+}
+
+const DATE_CATEGORY_KEYS = ['zuhause', 'draussen', 'essen', 'kultur', 'aktiv', 'ausflug', 'sonstiges'];
+
+/** Date-Idee: Titel, Art, Notiz; erledigt mit Datum (nicht in der Zukunft), Foto nur wenn erledigt */
+export function checkDateIdea(d: DateIdeaInput, now = new Date()): DateIdeaInput {
+  const title = clean(d.title);
+  if (!title) throw new InputError('Was wollt ihr unternehmen?');
+  if (title.length > 80) throw new InputError('Der Titel darf höchstens 80 Zeichen haben.');
+  const category = DATE_CATEGORY_KEYS.includes(d.category) ? d.category : 'sonstiges';
+  const note = (d.note ?? '').trim() || null;
+  if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
+  let doneOn = (d.doneOn ?? '').trim() || null;
+  if (doneOn) {
+    if (!isoOk(doneOn)) throw new InputError('Bitte ein gültiges Datum wählen.');
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    if (doneOn < '1900-01-01' || new Date(`${doneOn}T00:00:00`) > tomorrow) throw new InputError('Das Datum liegt in der Zukunft.');
+  } else doneOn = null;
+  const photoId = doneOn && d.photoId && UUID_RE.test(d.photoId) ? d.photoId : null;
+  return { title, category, note, doneOn, photoId };
 }
 
 const isoOk = (s: string) => {

@@ -11,10 +11,10 @@ import { secureStorage } from './secure-storage';
 import { base64ToBytes } from '../lib/base64';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkDateIdea, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -84,6 +84,11 @@ const toMilestone = (r: Row): Milestone => ({
 });
 const MILESTONE_COLS = 'id, title, icon, date, note, photo_id, created_by, created_at';
 const milestoneRow = (v: MilestoneInput) => ({ title: v.title, icon: v.icon, date: v.date, note: v.note, photo_id: v.photoId });
+const toDateIdea = (r: Row): DateIdea => ({
+  id: r.id, title: r.title, category: r.category, note: r.note, doneOn: r.done_on, photoId: r.photo_id, createdBy: r.created_by, createdAt: r.created_at,
+});
+const DATE_COLS = 'id, title, category, note, done_on, photo_id, created_by, created_at';
+const dateRow = (v: DateIdeaInput) => ({ title: v.title, category: v.category, note: v.note, done_on: v.doneOn, photo_id: v.photoId });
 const QUIZ_COLS = 'id, round, question_id, player, answer, created_by, created_at';
 const NOTE_COLS = 'id, title, body, color, created_by, updated_by, updated_at';
 const BD_COLS = 'id, name, month, day, year, note, created_by';
@@ -501,6 +506,21 @@ export class SupabaseStore implements DataStore {
   }
 
   // ---------- Meilensteine ----------
+  async listDateIdeas() {
+    const r = must(await this.sb.from('date_ideas').select(DATE_COLS).eq('couple_id', await this.coupleId()).order('created_at')) as Row[];
+    return r.map(toDateIdea);
+  }
+  async addDateIdea(d: DateIdeaInput) {
+    return toDateIdea(one(await this.sb.from('date_ideas').insert({ ...dateRow(checkDateIdea(d)), couple_id: await this.coupleId() })
+      .select(DATE_COLS).single()));
+  }
+  async updateDateIdea(id: string, d: DateIdeaInput) {
+    must(await this.sb.from('date_ideas').update(dateRow(checkDateIdea(d))).eq('id', id));
+  }
+  async deleteDateIdea(id: string) {
+    must(await this.sb.from('date_ideas').delete().eq('id', id));
+  }
+
   async listMilestones() {
     const r = must(await this.sb.from('milestones').select(MILESTONE_COLS).eq('couple_id', await this.coupleId()).order('date').order('created_at')) as Row[];
     return r.map(toMilestone);
@@ -530,7 +550,7 @@ export class SupabaseStore implements DataStore {
 
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], quiz: ['quiz_answers'], milestones: ['milestones'], cycle: ['cycle_periods'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], quiz: ['quiz_answers'], milestones: ['milestones'], dates: ['date_ideas'], cycle: ['cycle_periods'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

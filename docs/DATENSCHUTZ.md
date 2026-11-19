@@ -14,6 +14,7 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 | Einkaufseinträge | Einkaufsliste | Tabelle `shopping_items` |
 | Geburtstage, Notizen, Rezepte, Reisen + Packlisten, Filme & Serien, Geschenkideen + Wünsche | Die jeweiligen Bereiche | Tabellen `birthdays`, `notes`, `recipes`, `trips`, `trip_items`, `media`, `gifts` |
 | **Zyklus: nur Beginn und Ende der Periode** (Gesundheitsdaten, Art. 9 DSGVO) | Vorhersage im Kalender-Reiter „Zyklus“ | Tabellen `cycle_periods` und `cycle_settings` (Schalter „teilen“). Gehören der Person, nicht dem Paar |
+| Date-Ideen (Titel, Art, Notiz, Datum wann gemacht, Verweis auf ein Album-Foto) | Date-Liste | Tabelle `date_ideas`, nur für euch beide |
 | Meilensteine (Titel, Datum, Notiz, Verweis auf ein Album-Foto) | Zeitleiste und besondere Tage | Tabelle `milestones`, nur für euch beide |
 | Quiz-Antworten (welche Frage, wer dran war, Antwort) | Paar-Quiz | Tabelle `quiz_answers`, nur für euch beide |
 | Persönliche Einstellungen aus „Anpassen“ (Farbe, Tabs, Startseite, Schalter, gewähltes Paar-Bild) | Die App so zeigen, wie du sie eingestellt hast | Tabelle `user_prefs`, nur für dich selbst lesbar (auch nicht für den Partner); Kopie im Schlüsselbund des iPhones für einen schnellen Start |

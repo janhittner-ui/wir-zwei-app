@@ -154,6 +154,22 @@ export interface CyclePeriod {
 }
 export type CyclePeriodInput = Pick<CyclePeriod, 'start' | 'end'>;
 
+export type DateCategory = 'zuhause' | 'draussen' | 'essen' | 'kultur' | 'aktiv' | 'ausflug' | 'sonstiges';
+/** Idee auf der gemeinsamen Date-Liste; erledigt, sobald es ein Datum gibt */
+export interface DateIdea {
+  id: string;
+  title: string;
+  category: DateCategory;
+  note: string | null;
+  /** ISO-Datum, an dem ihr es gemacht habt; null = noch offen */
+  doneOn: string | null;
+  /** Foto aus dem Album (nur wenn erledigt) */
+  photoId: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+export type DateIdeaInput = Pick<DateIdea, 'title' | 'category' | 'note' | 'doneOn' | 'photoId'>;
+
 export type MilestoneIcon = 'heart' | 'date' | 'kiss' | 'travel' | 'home' | 'ring' | 'wedding' | 'baby' | 'star';
 /** Meilenstein des Paares (Zeitleiste hinter der Paar-Karte) */
 export interface Milestone {

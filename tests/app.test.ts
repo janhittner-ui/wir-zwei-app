@@ -17,7 +17,8 @@ import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } 
 import type { Trip } from '../src/data/types';
 import { base64ToBytes } from '../src/lib/base64';
 import { cycleHeadline, cycleInfo, cycleMarks } from '../src/lib/cycle';
-import { checkPeriod } from '../src/data/validate';
+import { checkDateIdea, checkPeriod } from '../src/data/validate';
+import { DATE_CATEGORY, DATE_SUGGESTIONS, openSuggestions, pickKey, randomDate, splitDates } from '../src/lib/date-ideas';
 import { dots, specialDays, specialText, sortTimeline } from '../src/lib/milestones';
 import { questionOrder, questionText, quizState } from '../src/lib/quiz';
 import { QUIZ_QUESTIONS } from '../src/lib/quiz-questions';
@@ -425,7 +426,7 @@ describe('Anpassen (persönliche Einstellungen)', () => {
       areas: { order: ['album', 'album', 'quatsch', 'listen'], hidden: ['rezepte', 'start'] },
       home: { order: ['shopping'], hidden: ['verse'], heroPhotoId: 'nicht-uuid' },
       look: { mode: 'dark', accent: 'neon' },
-      lists: { hidden: ['einkauf', 'notizen', 'filme', 'geschenke'] },
+      lists: { hidden: ['einkauf', 'notizen', 'filme', 'geschenke', 'dates'] },
       kalender: { showBirthdays: 'ja' },
       rezepte: { sort: 'neu' },
       album: { cols: 7 },
@@ -445,6 +446,8 @@ describe('Anpassen (persönliche Einstellungen)', () => {
     assert.deepEqual(p.look, { mode: 'dark', accent: 'blau' });
     // Listen: mindestens ein Reiter bleibt sichtbar
     assert.deepEqual(p.lists.hidden, []);
+    // Dates kamen später dazu und erscheinen bei bestehenden Einstellungen hinten
+    assert.deepEqual(visible(normalizePrefs({ lists: { order: ['filme', 'einkauf', 'notizen', 'geschenke'], hidden: ['notizen'] } }).lists), ['filme', 'einkauf', 'geschenke', 'dates']);
     assert.equal(p.kalender.showBirthdays, true);
     assert.equal(p.rezepte.sort, 'neu');
     assert.equal(p.album.cols, 3);
@@ -461,12 +464,13 @@ describe('Anpassen (persönliche Einstellungen)', () => {
 
   test('Verschieben und Ausblenden', () => {
     const o = DEFAULT_PREFS.lists;
-    assert.deepEqual(move(o, 'filme', -1).order, ['einkauf', 'filme', 'notizen', 'geschenke']);
+    assert.deepEqual(move(o, 'filme', -1).order, ['einkauf', 'filme', 'notizen', 'geschenke', 'dates']);
     assert.equal(move(o, 'einkauf', -1), o);
-    assert.equal(move(o, 'geschenke', 1), o);
+    assert.equal(move(o, 'dates', 1), o);
     let h = toggleHidden(o, 'einkauf', 1);
     h = toggleHidden(h, 'notizen', 1);
     h = toggleHidden(h, 'filme', 1);
+    h = toggleHidden(h, 'dates', 1);
     assert.deepEqual(visible(h), ['geschenke']);
     // der letzte sichtbare bleibt
     assert.equal(toggleHidden(h, 'geschenke', 1), h);
@@ -697,5 +701,90 @@ describe('Zyklus', () => {
     assert.equal((await a.listCyclePeriods()).length, 0);
     await b.deleteAccount();
     assert.equal(db.periods.size, 0);
+  });
+});
+
+describe('Date-Liste', () => {
+  const idea = (id: string, title: string, doneOn: string | null = null) =>
+    ({ id, title, category: 'zuhause' as const, note: null, doneOn, photoId: null, createdBy: null, createdAt: `2026-01-0${id.length}T00:00:00Z` });
+
+  test('Vorschläge sind gültig und eindeutig', () => {
+    assert.ok(DATE_SUGGESTIONS.length >= 20);
+    assert.equal(new Set(DATE_SUGGESTIONS.map((s) => s.title.toLowerCase())).size, DATE_SUGGESTIONS.length);
+    for (const s of DATE_SUGGESTIONS) {
+      assert.ok(s.title.length <= 80, s.title);
+      assert.ok(DATE_CATEGORY[s.category], s.title);
+      assert.deepEqual(checkDateIdea({ title: s.title, category: s.category, note: null, doneOn: null, photoId: null }).title, s.title);
+    }
+    const left = openSuggestions([idea('a', ' picknick  im PARK ')]);
+    assert.equal(left.length, DATE_SUGGESTIONS.length - 1);
+    assert.ok(!left.some((s) => s.title === 'Picknick im Park'));
+  });
+
+  test('Zufälliges Date: offene Ideen zuerst, nicht zweimal dasselbe, sonst Vorschlag', () => {
+    const list = [idea('a', 'Kino'), idea('bb', 'Eis'), idea('ccc', 'Wandern', '2026-05-01')];
+    const first = randomDate(list, null, () => 0);
+    assert.equal(first?.kind, 'idea');
+    assert.equal(pickKey(first), 'a');
+    // der vorige Treffer kommt nicht direkt wieder
+    for (const r of [0, 0.5, 0.99]) assert.equal(pickKey(randomDate(list, 'a', () => r)), 'bb');
+    // nur eine offene Idee: die darf wieder kommen
+    assert.equal(pickKey(randomDate([idea('a', 'Kino')], 'a', () => 0.3)), 'a');
+    // alles erledigt → Vorschlag, der nicht auf der Liste steht
+    const s = randomDate([idea('a', 'Picknick im Park', '2026-01-01')], null, () => 0);
+    assert.equal(s?.kind, 'suggestion');
+    assert.notEqual(pickKey(s), 'Picknick im Park');
+    const { open, done } = splitDates([idea('a', 'A', '2026-01-01'), idea('bb', 'B'), idea('ccc', 'C', '2026-03-01')]);
+    assert.deepEqual(open.map((d) => d.id), ['bb']);
+    assert.deepEqual(done.map((d) => d.id), ['ccc', 'a']);
+  });
+
+  test('Eingaben prüfen: Titel, Art, Datum nicht in der Zukunft, Foto nur wenn erledigt', () => {
+    const now = new Date(2026, 10, 19);
+    const base = { title: 'Kino', category: 'kultur' as const, note: null, doneOn: null, photoId: null };
+    assert.throws(() => checkDateIdea({ ...base, title: '  ' }), /Was wollt ihr/);
+    assert.throws(() => checkDateIdea({ ...base, title: 'x'.repeat(81) }), /80 Zeichen/);
+    assert.equal(checkDateIdea({ ...base, category: 'rakete' as never }).category, 'sonstiges');
+    assert.throws(() => checkDateIdea({ ...base, doneOn: '2026-02-30' }, now), /gültiges Datum/);
+    assert.throws(() => checkDateIdea({ ...base, doneOn: '2026-11-25' }, now), /Zukunft/);
+    assert.equal(checkDateIdea({ ...base, doneOn: '2026-11-19' }, now).doneOn, '2026-11-19');
+    // Foto ohne „gemacht“ wird verworfen
+    assert.equal(checkDateIdea({ ...base, photoId: '0f8c2f0a-1b2c-4d3e-8f90-123456789abc' }, now).photoId, null);
+  });
+
+  test('Mock-DB: Paar teilt die Liste, Foto aus eigenem Album, Fremde sehen nichts', async () => {
+    const db = new MemoryBackend();
+    const a = new MemoryStore(db);
+    const b = new MemoryStore(db);
+    const c = new MemoryStore(db);
+    await login(a, 'd1@example.org');
+    await login(b, 'd2@example.org');
+    await login(c, 'd3@example.org');
+    for (const [s, n] of [[a, 'A'], [b, 'B'], [c, 'C']] as const) await s.saveMyProfile({ displayName: n, color: 'blue' });
+    await a.createCouple();
+    await b.joinCouple(await a.createInvite());
+    await c.createCouple();
+    const d = await a.addDateIdea({ title: ' Picknick  am See ', category: 'draussen', note: null, doneOn: null, photoId: null });
+    assert.equal(d.title, 'Picknick am See');
+    assert.equal((await b.listDateIdeas()).length, 1);
+    assert.equal((await c.listDateIdeas()).length, 0);
+    await c.updateDateIdea(d.id, { ...d, title: 'gehackt' });
+    await c.deleteDateIdea(d.id);
+    assert.equal((await a.listDateIdeas())[0].title, 'Picknick am See');
+    const img = 'A'.repeat(200);
+    const foreign = await c.addPhoto({ base64: img, width: 800, height: 600 });
+    await assert.rejects(() => b.updateDateIdea(d.id, { ...d, doneOn: '2026-01-10', photoId: foreign.id }), /date_photo_invalid/);
+    const own = await a.addPhoto({ base64: img, width: 800, height: 600 });
+    await b.updateDateIdea(d.id, { ...d, doneOn: '2026-01-10', photoId: own.id, note: 'Schön war es' });
+    assert.equal((await a.listDateIdeas())[0].photoId, own.id);
+    await a.deletePhoto(own.id);
+    const after = (await a.listDateIdeas())[0];
+    assert.equal(after.photoId, null);
+    assert.equal(after.doneOn, '2026-01-10');
+    // zurück auf „noch nicht gemacht“
+    await a.updateDateIdea(d.id, { ...after, doneOn: null });
+    assert.equal((await b.listDateIdeas())[0].doneOn, null);
+    await b.deleteDateIdea(d.id);
+    assert.equal((await a.listDateIdeas()).length, 0);
   });
 });

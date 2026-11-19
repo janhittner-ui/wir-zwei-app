@@ -358,6 +358,32 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(null, 'select * from public.milestones', /permission denied/);
   });
 
+  test('Date-Liste: Paar teilt sie, erledigt mit Datum, Foto nur wenn erledigt und aus eigenem Album', async () => {
+    const [ph] = await as<{ id: string }>(A, `insert into public.photos (couple_id, width, height) values ($1, 800, 600) returning id`, [couple]);
+    const [d] = await as<{ id: string; category: string; done_on: string | null }>(A, `insert into public.date_ideas (couple_id, title, category) values ($1, 'Picknick am See', 'draussen') returning id, category, done_on`, [couple]);
+    assert.equal(d.category, 'draussen');
+    assert.equal(d.done_on, null);
+    await as(B, `insert into public.date_ideas (couple_id, title) values ($1, 'Kochabend')`, [couple]);
+    assert.equal((await as(B, 'select * from public.date_ideas')).length, 2);
+    // Foto erst, wenn erledigt
+    await fails(B, `update public.date_ideas set photo_id = $2 where id = $1`, /check constraint/, [d.id, ph.id]);
+    await as(B, `update public.date_ideas set done_on = current_date, photo_id = $2, note = 'Super schön' where id = $1`, [d.id, ph.id]);
+    await fails(A, `update public.date_ideas set done_on = null where id = $1`, /check constraint/, [d.id]);
+    await fails(A, `insert into public.date_ideas (couple_id, title, done_on, photo_id) values ($1, 'X', current_date, gen_random_uuid())`, /date_photo_invalid/, [couple]);
+    await fails(A, `insert into public.date_ideas (couple_id, title) values ($1, '  ')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.date_ideas (couple_id, title, category) values ($1, 'X', 'rakete')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.date_ideas (couple_id, title, done_on) values ($1, 'X', current_date + 30)`, /check constraint/, [couple]);
+    await as(A, `delete from public.photos where id = $1`, [ph.id]);
+    const [after] = await as<{ photo_id: string | null; note: string }>(A, `select photo_id, note from public.date_ideas where id = $1`, [d.id]);
+    assert.equal(after.photo_id, null);
+    assert.equal(after.note, 'Super schön');
+    assert.equal((await as(C, 'select * from public.date_ideas')).length, 0);
+    assert.equal((await as(C, `update public.date_ideas set title = 'gehackt' returning id`)).length, 0);
+    assert.equal((await as(C, `delete from public.date_ideas returning id`)).length, 0);
+    await fails(C, `insert into public.date_ideas (couple_id, title) values ($1, 'Einbruch')`, /row-level security/, [couple]);
+    await fails(null, 'select * from public.date_ideas', /permission denied/);
+  });
+
   test('Quiz: Paar teilt Antworten, jede Frage einmal pro Runde, Spieler muss zum Paar gehören', async () => {
     await as(A, `insert into public.quiz_answers (couple_id, question_id, player, answer) values ($1, 'lieblingsessen', $2, 'Lasagne')`, [couple, A]);
     await as(B, `insert into public.quiz_answers (couple_id, question_id, player) values ($1, 'traumreise', $2)`, [couple, B]);
@@ -420,7 +446,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) + (select count(*) from public.quiz_answers) + (select count(*) from public.milestones) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) + (select count(*) from public.quiz_answers) + (select count(*) from public.milestones) + (select count(*) from public.date_ideas) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

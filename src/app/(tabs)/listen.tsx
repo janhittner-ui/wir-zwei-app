@@ -1,10 +1,11 @@
-/** Listen: Einkauf, Notizen, Filme & Serien und Geschenke in einem Tab (Reiter oben), wie in der alten Web-App. */
+/** Listen: Einkauf, Notizen, Filme & Serien, Geschenke und Dates in einem Tab (Reiter oben), wie in der alten Web-App. */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { usePrefs } from '@/data/prefs';
 import { LIST_LABEL, LIST_SEGS, visible, type ListSeg } from '@/lib/prefs';
+import { DatesList } from '@/ui/dates-list';
 import { GiftsList } from '@/ui/gifts-list';
 import { MediaList } from '@/ui/media-list';
 import { NotesList } from '@/ui/notes-list';
@@ -13,6 +14,9 @@ import { ShoppingList } from '@/ui/shopping-list';
 
 type Seg = ListSeg;
 const isSeg = (s?: string): s is Seg => LIST_SEGS.includes(s as Seg);
+const EYEBROW: Record<Seg, string> = {
+  einkauf: 'Was fehlt?', notizen: 'Festgehalten', filme: 'Filme & Serien für den Sofaabend', geschenke: 'Geschenkideen und Wünsche', dates: 'Ideen für eure Zeit zu zweit',
+};
 
 export default function Listen() {
   const params = useLocalSearchParams<{ seg?: string }>();
@@ -30,12 +34,12 @@ export default function Listen() {
     <Screen>
       <View style={{ gap: 12 }}>
         <View>
-          <T v="eyebrow">{seg === 'einkauf' ? 'Was fehlt?' : seg === 'notizen' ? 'Festgehalten' : seg === 'filme' ? 'Filme & Serien für den Sofaabend' : 'Geschenkideen und Wünsche'}</T>
+          <T v="eyebrow">{EYEBROW[seg]}</T>
           <T v="display">Listen</T>
         </View>
-        {segs.length > 1 ? <Segmented<Seg> value={seg} onChange={setSeg} options={segs.map((k) => ({ key: k, label: LIST_LABEL[k] }))} /> : null}
+        {segs.length > 1 ? <Segmented<Seg> fill={segs.length >= 4} value={seg} onChange={setSeg} options={segs.map((k) => ({ key: k, label: LIST_LABEL[k] }))} /> : null}
       </View>
-      {seg === 'einkauf' ? <ShoppingList /> : seg === 'notizen' ? <NotesList /> : seg === 'filme' ? <MediaList /> : <GiftsList />}
+      {seg === 'einkauf' ? <ShoppingList /> : seg === 'notizen' ? <NotesList /> : seg === 'filme' ? <MediaList /> : seg === 'dates' ? <DatesList /> : <GiftsList />}
     </Screen>
   );
 }
