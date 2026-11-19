@@ -69,7 +69,7 @@ Wann es sich lohnt: wenn ihr später sehr persönliche Inhalte anbietet (z. B. T
       Hinweis: Supabase ist ein US-Unternehmen; die Daten liegen in Frankfurt, der Vertrag enthält EU-Standardvertragsklauseln. Das in der Datenschutzerklärung nennen.
 - [ ] **Eigenen E-Mail-Versand** einrichten (SMTP eines EU-Anbieters, z. B. Brevo oder Mailjet, beide Frankreich) statt des Supabase-Testversands. Ebenfalls AVV abschließen.
       Danach: „Confirm email“ wieder einschalten, Vorlagen auf Deutsch, „Passwort vergessen“ einbauen, optional Anmeldung per Code (`EXPO_PUBLIC_EMAIL_CODES=1`, Vorlage mit `{{ .Token }}`).
-- [ ] Datenschutzerklärung + Impressum als Webseite, Link in der App (Einstellungen) und im App Store.
+- [ ] Datenschutzerklärung + Impressum + AGB als Webseite, Link in der App (Einstellungen) und im App Store. Entwürfe für Impressum und AGB: `docs/rechtliches/`.
 - [ ] Apple **App Privacy** („Datenschutz-Etiketten“) ausfüllen, voraussichtlich:
   - Kontaktinformationen → E-Mail-Adresse: *mit dir verknüpft*, Zweck *App-Funktionalität*, **kein Tracking**
   - Benutzerinhalte → Sonstige Benutzerinhalte: *mit dir verknüpft*, Zweck *App-Funktionalität*, **kein Tracking**
