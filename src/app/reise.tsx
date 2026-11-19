@@ -7,6 +7,7 @@ import { friendlyError } from '@/data/errors';
 import { useApp, useTripItems, useTrips } from '@/data/provider';
 import type { TripItem } from '@/data/types';
 import { tripCountdown, tripDays, tripRange, tripStatus } from '@/lib/trips';
+import { goArea } from '@/lib/nav';
 import { fonts, personColors, useTheme } from '@/theme';
 import { IconCheck, IconLeft, IconPencil, IconPlus } from '@/ui/icons';
 import { Banner, Button, Card, CardHead, Input, Press, Screen, T } from '@/ui/kit';
@@ -27,7 +28,7 @@ export default function ReiseAnsicht() {
   const [err, setErr] = useState<string | null>(null);
   const input = useRef<TextInputInstance>(null);
 
-  const back = () => (router.canGoBack() ? router.back() : router.replace({ pathname: '/kalender', params: { seg: 'reisen' } }));
+  const back = () => (router.canGoBack() ? router.back() : goArea('kalender', { seg: 'reisen' }, 'replace'));
 
   if (!tr) {
     return (

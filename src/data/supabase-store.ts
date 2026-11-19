@@ -14,7 +14,7 @@ import type {
   Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -156,6 +156,15 @@ export class SupabaseStore implements DataStore {
       .upsert({ id: me, display_name: checkDisplayName(p.displayName), color: checkColor(p.color) })
       .select('id, display_name, color').single());
     return toProfile(r);
+  }
+  async getMyPrefs() {
+    const me = await this.uid();
+    const r = must(await this.sb.from('user_prefs').select('prefs').eq('user_id', me).maybeSingle());
+    return r ? (r.prefs as unknown) : null;
+  }
+  async saveMyPrefs(prefs: object) {
+    const me = await this.uid();
+    must(await this.sb.from('user_prefs').upsert({ user_id: me, prefs: checkPrefs(prefs) }, { onConflict: 'user_id' }));
   }
   async getMyCouple(): Promise<Couple | null> {
     const id = must(await this.sb.rpc('my_couple_id')) as string | null;

@@ -1,10 +1,11 @@
 /** Farben und Schriften aus Wir Zwei v40 (hell/dunkel). */
 import type { PersonColor } from '@/data/types';
+import type { AccentKey } from '@/lib/prefs';
 
 export const light = {
   bg: '#F2F4F8', surface: '#FFFFFF', surface2: '#E8ECF3', ink: '#1A2130', muted: '#5E677A',
   line: '#DCE1EA', lineStrong: '#B9C1CF',
-  blue: '#1C76E4', blueSoft: '#DDEBFD', red: '#CF3B30', redSoft: '#FBE5E2', green: '#2E7D57',
+  blue: '#1C76E4', blueSoft: '#DDEBFD', personBlue: '#1C76E4', personBlueSoft: '#DDEBFD', red: '#CF3B30', redSoft: '#FBE5E2', green: '#2E7D57',
   pink: '#FF8DC1', pinkSoft: '#FFE6F1', pinkInk: '#C2387A',
   yellow: '#FF8A1F', yellowSoft: '#FFE9D4', yellowInk: '#B05200',
   onAccent: '#FFFFFF',
@@ -19,7 +20,7 @@ export type Theme = typeof light;
 export const dark: Theme = {
   bg: '#0E121A', surface: '#171D29', surface2: '#212938', ink: '#E6EAF2', muted: '#98A1B4',
   line: '#2A3345', lineStrong: '#465169',
-  blue: '#6DB3FF', blueSoft: '#15294A', red: '#F08273', redSoft: '#3B201E', green: '#7CCB9F',
+  blue: '#6DB3FF', blueSoft: '#15294A', personBlue: '#6DB3FF', personBlueSoft: '#15294A', red: '#F08273', redSoft: '#3B201E', green: '#7CCB9F',
   pink: '#FF9ECB', pinkSoft: '#3D2131', pinkInk: '#FFB6D8',
   yellow: '#FF9D45', yellowSoft: '#3B2716', yellowInk: '#FFB772',
   onAccent: '#0E121A',
@@ -29,6 +30,24 @@ export const dark: Theme = {
   shadow: '#000000',
   dark: true,
 };
+
+/**
+ * Akzentfarben aus „Anpassen“ (Knöpfe, Links, aktiver Tab): [hell, hell-weich, dunkel, dunkel-weich].
+ * Die Farben der Personen (blau/rosa) bleiben davon unberührt.
+ */
+export const ACCENT_COLORS: Record<AccentKey, [string, string, string, string]> = {
+  blau: ['#1C76E4', '#DDEBFD', '#6DB3FF', '#15294A'],
+  rosa: ['#C93A7A', '#FFE6F1', '#FF9ECB', '#3D2131'],
+  lila: ['#7448D1', '#ECE5FC', '#B79CFF', '#2A2146'],
+  gruen: ['#2E7D57', '#DCF0E3', '#7CCB9F', '#1D3328'],
+  petrol: ['#0D7680', '#D6EFF1', '#5CC8D0', '#14313A'],
+  orange: ['#C4560C', '#FFE9D4', '#FF9D45', '#3B2716'],
+};
+
+export function withAccent(base: Theme, accent: AccentKey): Theme {
+  const c = ACCENT_COLORS[accent] ?? ACCENT_COLORS.blau;
+  return base.dark ? { ...base, blue: c[2], blueSoft: c[3] } : { ...base, blue: c[0], blueSoft: c[1] };
+}
 
 export const fonts = {
   display: 'BricolageGrotesque_700Bold',
@@ -45,5 +64,5 @@ export const fonts = {
 export function personColors(t: Theme, c: PersonColor | null | undefined) {
   return c === 'pink'
     ? { dot: t.pink, soft: t.pinkSoft, ink: t.pinkInk }
-    : { dot: t.blue, soft: t.blueSoft, ink: t.blue };
+    : { dot: t.personBlue, soft: t.personBlueSoft, ink: t.personBlue };
 }

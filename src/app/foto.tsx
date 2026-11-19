@@ -9,6 +9,7 @@ import { friendlyError } from '@/data/errors';
 import { useApp, usePhotos } from '@/data/provider';
 import type { Photo } from '@/data/types';
 import { fullDate } from '@/lib/dates';
+import { goArea } from '@/lib/nav';
 import { fonts } from '@/theme';
 import { IconPencil, IconTrash, IconX } from '@/ui/icons';
 import { Press } from '@/ui/kit';
@@ -33,7 +34,7 @@ export default function FotoAnsicht() {
 
   const cur = items[Math.min(index, items.length - 1)];
   const by = useMemo(() => couple?.members.find((m) => m.id === cur?.createdBy), [couple, cur]);
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/album'));
+  const close = () => (router.canGoBack() ? router.back() : goArea('album', {}, 'replace'));
 
   const saveCaption = async () => {
     if (!cur) return;

@@ -7,6 +7,7 @@ import { friendlyError } from '@/data/errors';
 import { useApp, useRecipes } from '@/data/provider';
 import { searchKey } from '@/lib/birthdays';
 import { formatMinutes, parseIngredients, parseSteps, scaleLine, toShopping } from '@/lib/recipe';
+import { goArea } from '@/lib/nav';
 import { fonts, useTheme } from '@/theme';
 import { IconCart, IconClock, IconHeart, IconHeartLine, IconLeft, IconPencil } from '@/ui/icons';
 import { Banner, Button, Card, CardHead, Press, Screen, T } from '@/ui/kit';
@@ -29,7 +30,7 @@ export default function RezeptAnsicht() {
   const ings = useMemo(() => parseIngredients(r?.ingredients ?? ''), [r?.ingredients]);
   const steps = useMemo(() => parseSteps(r?.steps ?? ''), [r?.steps]);
 
-  const back = () => (router.canGoBack() ? router.back() : router.replace('/rezepte'));
+  const back = () => (router.canGoBack() ? router.back() : goArea('rezepte', {}, 'replace'));
 
   if (!r) {
     return (

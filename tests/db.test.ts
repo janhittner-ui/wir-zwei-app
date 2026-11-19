@@ -306,10 +306,32 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal((await as(C, 'select * from public.couples')).length, 0);
   });
 
+  test('Persönliche Einstellungen: nur für einen selbst, Größe begrenzt', async () => {
+    await as(A, `insert into public.user_prefs (prefs) values ('{"look":{"accent":"lila"}}')`);
+    await as(B, `insert into public.user_prefs (prefs) values ('{"tabs":["listen"]}')`);
+    const own = await as<{ user_id: string; prefs: { look: { accent: string } } }>(A, 'select * from public.user_prefs');
+    assert.equal(own.length, 1);
+    assert.equal(own[0].user_id, A);
+    assert.equal(own[0].prefs.look.accent, 'lila');
+    // Partner sieht und ändert fremde Einstellungen nicht
+    assert.equal((await as(B, `update public.user_prefs set prefs = '{}' where user_id = $1 returning user_id`, [A])).length, 0);
+    assert.equal((await as(B, `delete from public.user_prefs where user_id = $1 returning user_id`, [A])).length, 0);
+    await fails(B, `insert into public.user_prefs (user_id, prefs) values ($1, '{}')`, /row-level security|duplicate key/, [A]);
+    await fails(A, `update public.user_prefs set user_id = $1`, /row-level security|duplicate key/, [C]);
+    // Upsert wie in der App
+    await as(A, `insert into public.user_prefs (prefs) values ('{"look":{"accent":"gruen"}}') on conflict (user_id) do update set prefs = excluded.prefs`);
+    assert.equal((await as<{ prefs: { look: { accent: string } } }>(A, 'select prefs from public.user_prefs'))[0].prefs.look.accent, 'gruen');
+    await fails(A, `update public.user_prefs set prefs = '[1,2]'`, /check constraint/);
+    await fails(A, `update public.user_prefs set prefs = jsonb_build_object('x', repeat('a', 9000))`, /check constraint/);
+    assert.equal((await as(C, 'select * from public.user_prefs')).length, 0);
+    await fails(null, 'select * from public.user_prefs', /permission denied/);
+  });
+
   test('Konto löschen: Konto weg, Partner behält gemeinsame Daten ohne Verweis', async () => {
     await as(B, 'select public.delete_my_account()');
     const users = (await db.query<{ id: string }>('select id from auth.users')).rows.map((r) => r.id);
     assert.ok(!users.includes(B));
+    assert.equal((await db.query('select * from public.user_prefs where user_id = $1', [B])).rows.length, 0);
     const evs = await as<{ who: string | null }>(A, 'select * from public.events');
     assert.equal(evs.length, 1);
     assert.equal(evs[0].who, null);

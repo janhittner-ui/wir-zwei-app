@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { usePrefs } from '@/data/prefs';
 import { useRecipes } from '@/data/provider';
 import type { Recipe } from '@/data/types';
 import { searchKey } from '@/lib/birthdays';
@@ -18,7 +19,11 @@ export default function Rezepte() {
   const { items, loaded, error } = useRecipes();
   const [q, setQ] = useState('');
   const [seg, setSeg] = useState<Seg>('alle');
-  const recipes = useMemo(() => [...items].sort((a, b) => a.title.localeCompare(b.title, 'de')), [items]);
+  const sort = usePrefs().prefs.rezepte.sort;
+  const recipes = useMemo(
+    () => [...items].sort((a, b) => (sort === 'neu' ? b.updatedAt.localeCompare(a.updatedAt) : 0) || a.title.localeCompare(b.title, 'de')),
+    [items, sort],
+  );
   const favCount = recipes.filter((r) => r.favorite).length;
   const key = searchKey(q);
   const hits = recipes

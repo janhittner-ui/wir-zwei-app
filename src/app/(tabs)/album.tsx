@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { ActionSheetIOS, Platform, useWindowDimensions, View } from 'react-native';
 
 import { friendlyError } from '@/data/errors';
+import { usePrefs } from '@/data/prefs';
 import { useApp, usePhotos } from '@/data/provider';
 import type { Photo } from '@/data/types';
 import { MONTHS } from '@/lib/dates';
@@ -25,7 +26,8 @@ export default function Album() {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ text: string; warn?: boolean } | null>(null);
 
-  const cols = width >= 700 ? 5 : 3;
+  const pref = usePrefs().prefs.album.cols;
+  const cols = width >= 700 ? pref + 2 : pref;
   const size = Math.floor((Math.min(width, 760) - 32 - GAP * (cols - 1)) / cols);
 
   const months = useMemo(() => {

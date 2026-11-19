@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useRecipes } from '@/data/provider';
 import { parseIngredients, parseSteps, scaleLine } from '@/lib/recipe';
+import { goArea } from '@/lib/nav';
 import { fonts, useTheme } from '@/theme';
 import { IconX } from '@/ui/icons';
 import { Button, Press, Segmented, T } from '@/ui/kit';
@@ -32,7 +33,7 @@ export default function Kochen() {
   const ings = useMemo(() => parseIngredients(r?.ingredients ?? ''), [r?.ingredients]);
   const n = Math.max(1, Number(servings) || r?.servings || 1);
   const factor = r ? n / r.servings : 1;
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/rezepte'));
+  const close = () => (router.canGoBack() ? router.back() : goArea('rezepte', {}, 'replace'));
   const step = Math.min(i, Math.max(0, steps.length - 1));
   const last = step >= steps.length - 1;
 

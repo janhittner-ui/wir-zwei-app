@@ -10,6 +10,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { PrefsProvider, PrefsSync } from '@/data/prefs';
 import { DataProvider, useApp } from '@/data/provider';
 import { ThemeRoot, useTheme } from '@/theme';
 import { Aurora, Button, Loading, T } from '@/ui/kit';
@@ -36,11 +37,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeRoot>
-          <DataProvider>
-            <Root />
-          </DataProvider>
-        </ThemeRoot>
+        <PrefsProvider>
+          <ThemeRoot>
+            <DataProvider>
+              <PrefsSync />
+              <Root />
+            </DataProvider>
+          </ThemeRoot>
+        </PrefsProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -87,6 +91,8 @@ function Root() {
           <Stack.Screen name="geschenk" options={{ presentation: 'modal' }} />
           <Stack.Screen name="kochen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
           <Stack.Screen name="einstellungen" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="anpassen" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="bereich/[key]" />
         </Stack.Protected>
       </Stack>
     </>

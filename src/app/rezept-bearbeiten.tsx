@@ -6,6 +6,7 @@ import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { friendlyError } from '@/data/errors';
 import { useApp, useRecipes } from '@/data/provider';
 import { InputError } from '@/data/validate';
+import { goArea } from '@/lib/nav';
 import { useTheme } from '@/theme';
 import { FormRow } from '@/ui/date-field';
 import { IconX } from '@/ui/icons';
@@ -41,7 +42,7 @@ export default function RezeptBearbeiten() {
     }
   }, [existing, filled]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/rezepte'));
+  const close = () => (router.canGoBack() ? router.back() : goArea('rezepte', {}, 'replace'));
 
   const save = async () => {
     setBusy(true);
@@ -69,7 +70,7 @@ export default function RezeptBearbeiten() {
         onPress: async () => {
           try {
             await store.deleteRecipe(existing.id);
-            router.dismissTo('/rezepte');
+            goArea('rezepte', {}, 'dismissTo');
           } catch (e) {
             setErr(friendlyError(e));
           }

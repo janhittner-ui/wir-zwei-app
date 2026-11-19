@@ -13,6 +13,7 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 | Termine (Titel, Datum, Uhrzeit, Notiz, für wen) | Kalender | Tabelle `events` |
 | Einkaufseinträge | Einkaufsliste | Tabelle `shopping_items` |
 | Geburtstage, Notizen, Rezepte, Reisen + Packlisten, Filme & Serien, Geschenkideen + Wünsche | Die jeweiligen Bereiche | Tabellen `birthdays`, `notes`, `recipes`, `trips`, `trip_items`, `media`, `gifts` |
+| Persönliche Einstellungen aus „Anpassen“ (Farbe, Tabs, Startseite, Schalter, gewähltes Paar-Bild) | Die App so zeigen, wie du sie eingestellt hast | Tabelle `user_prefs`, nur für dich selbst lesbar (auch nicht für den Partner); Kopie im Schlüsselbund des iPhones für einen schnellen Start |
 | Fotos (verkleinert auf max. 1600 Pixel, JPEG) und Bildunterschrift | Gemeinsames Album | **Privater** Speicher-Bucket `photos` (Frankfurt) + Tabelle `photos` |
 
 Nicht gespeichert: Passwörter im Klartext, Telefonnummer, Standort (auch nicht aus Fotos: die App liest keine Foto-Zusatzdaten aus und speichert jedes Bild neu, ohne Aufnahmeort), Kontakte, Geräte-IDs, Werbe-IDs, Nutzungsstatistiken.
@@ -33,7 +34,7 @@ Nicht gespeichert: Passwörter im Klartext, Telefonnummer, Standort (auch nicht 
 - In der App steckt nur der öffentliche „publishable key“. Der geheime Schlüssel wird nirgends in der App verwendet.
 
 ## Löschen (DSGVO Art. 17, Apple-Richtlinie 5.1.1(v))
-- **Einstellungen → Konto löschen** löscht sofort und endgültig: Konto, E-Mail, Profil.
+- **Einstellungen → Konto löschen** löscht sofort und endgültig: Konto, E-Mail, Profil, persönliche Einstellungen.
 - Gemeinsame Einträge bleiben beim Partner, aber ohne Verweis auf das gelöschte Konto.
 - Ist niemand mehr im Paar, werden alle Paar-Daten mitgelöscht. Die App löscht dabei vorher auch alle Fotodateien des Paares aus dem Speicher.
 - **Paar verlassen** funktioniert genauso, nur ohne das Konto zu löschen.
