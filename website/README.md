@@ -1,9 +1,9 @@
 # Webseite (Rechtstexte und Support)
 
-Diese Dateien liegen als Kopie im öffentlichen Repo `janhittner-ui.github.io` und sind dort über GitHub Pages erreichbar:
+Wird bei jeder Änderung in diesem Ordner auf `main` automatisch über GitHub Pages veröffentlicht (`.github/workflows/webseite.yml`):
 
-- https://janhittner-ui.github.io/ (Support-Seite mit Kontakt)
-- https://janhittner-ui.github.io/datenschutz.html
-- https://janhittner-ui.github.io/impressum.html
+- https://janhittner-ui.github.io/wir-zwei-app/ (Support-Seite mit Kontakt)
+- https://janhittner-ui.github.io/wir-zwei-app/datenschutz.html
+- https://janhittner-ui.github.io/wir-zwei-app/impressum.html
 
-Bei Änderungen hier ändern und die Dateien ins öffentliche Repo übernehmen. Die Adressen stehen in der App in `src/config.ts`.
+Die Adressen stehen in der App in `src/config.ts`. Bei einer eigenen Domain dort `LEGAL_BASE` ändern.

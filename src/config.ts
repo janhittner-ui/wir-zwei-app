@@ -4,9 +4,9 @@ export const APP_NAME = 'Paarweise';
 export const APP_NAME_PARTS = ['Paar', 'weise'] as const;
 
 /**
- * Rechtstexte im Netz (GitHub Pages aus dem öffentlichen Repo janhittner-ui.github.io, Quelle: Ordner website/).
+ * Rechtstexte im Netz (GitHub Pages, Quelle: Ordner website/, veröffentlicht per .github/workflows/webseite.yml).
  * Bei eigener Domain nur LEGAL_BASE ändern.
  */
-export const LEGAL_BASE = 'https://janhittner-ui.github.io';
+export const LEGAL_BASE = 'https://janhittner-ui.github.io/wir-zwei-app';
 export const PRIVACY_URL = `${LEGAL_BASE}/datenschutz.html`;
 export const IMPRINT_URL = `${LEGAL_BASE}/impressum.html`;

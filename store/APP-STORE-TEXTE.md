@@ -86,8 +86,8 @@ Diese Felder verlangt Apple. Die Seiten kommen aus dem Ordner `website/` und lie
 
 | Feld in App Store Connect | Adresse |
 |---|---|
-| Datenschutzrichtlinie-URL (Pflicht) | https://janhittner-ui.github.io/datenschutz.html |
-| Support-URL (Pflicht) | https://janhittner-ui.github.io/ |
+| Datenschutzrichtlinie-URL (Pflicht) | https://janhittner-ui.github.io/wir-zwei-app/datenschutz.html |
+| Support-URL (Pflicht) | https://janhittner-ui.github.io/wir-zwei-app/ |
 | Marketing-URL (freiwillig) | leer lassen |
 
 Nutzungsbedingungen: Für Version 1 gilt Apples Standard-Lizenzvertrag (EULA), dafür muss nichts eingetragen werden. Die eigenen AGB (`docs/rechtliches/AGB.md`) braucht es erst mit dem Abo.
