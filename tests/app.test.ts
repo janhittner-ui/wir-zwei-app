@@ -16,6 +16,7 @@ import { VERSES } from '../src/lib/verses';
 import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } from '../src/lib/trips';
 import type { Trip } from '../src/data/types';
 import { base64ToBytes } from '../src/lib/base64';
+import { dots, specialDays, specialText, sortTimeline } from '../src/lib/milestones';
 import { questionOrder, questionText, quizState } from '../src/lib/quiz';
 import { QUIZ_QUESTIONS } from '../src/lib/quiz-questions';
 import { DEFAULT_PREFS, move, normalizePrefs, toggleHidden, visible } from '../src/lib/prefs';
@@ -555,5 +556,61 @@ describe('Paar-Quiz', () => {
 
   test('Namen in der Frage', () => {
     assert.equal(questionText({ id: 'x', text: 'Was mag {partner}? Sagt {ich}.' }, 'Jan', 'Vanessa'), 'Was mag Vanessa? Sagt Jan.');
+  });
+});
+
+describe('Meilensteine', () => {
+  const ms = (id: string, title: string, date: string, icon: 'wedding' | 'ring' | 'heart' = 'heart') =>
+    ({ id, title, icon, date, note: null, photoId: null, createdBy: null, createdAt: '2026-01-01T00:00:00Z' });
+
+  test('Besondere Tage: Jahrestag, runde Zahl, Meilenstein-Jahrestage, Zukunft', () => {
+    const now = new Date(2026, 10, 19);
+    const list = specialDays('2023-12-01', [ms('h', 'Hochzeit', '2025-11-29', 'wedding'), ms('v', 'Verlobung', '2027-02-14', 'ring'), ms('alt', 'Erstes Date', '2023-11-19')], now);
+    assert.equal(list[0].title, 'Erstes Date · 3. Jahrestag');
+    assert.equal(list[0].days, 0);
+    assert.equal(specialText(list[0]), 'Heute: Erstes Date · 3. Jahrestag!');
+    // 1.084 Tage zusammen → nächste runde Zahl 1.500 erst nach dem Jahrestag
+    const titles = list.map((d) => d.title);
+    assert.ok(titles.includes('3. Jahrestag'));
+    assert.ok(titles.includes('1. Hochzeitstag'));
+    assert.ok(titles.includes('Verlobung'));
+    assert.equal(list.find((d) => d.title === '1. Hochzeitstag')!.days, 10);
+    assert.equal(list.find((d) => d.title === '3. Jahrestag')!.days, 12);
+    assert.deepEqual(list.map((d) => d.days), [...list.map((d) => d.days)].sort((a, b) => a - b));
+  });
+
+  test('Runde Zahlen und Sonderfälle', () => {
+    const now = new Date(2026, 10, 19);
+    const d = specialDays('2024-02-29', [], now);
+    // 994 Tage → 1.000 Tage in 6 Tagen
+    assert.equal(d[0].title, '1.000 Tage zusammen');
+    assert.equal(d[0].days, 6);
+    assert.equal(specialText(d[0]), '1.000 Tage zusammen in 6 Tagen');
+    assert.equal(specialDays(null, [], now).length, 0);
+    assert.equal(specialDays('2030-01-01', [], now).length, 0);
+    // 29. Februar feiert man in Nicht-Schaltjahren am 28.
+    const leap = specialDays(null, [ms('x', 'Kennengelernt', '2024-02-29')], new Date(2027, 1, 1));
+    assert.equal(leap[0].date.getDate(), 28);
+    assert.equal(dots(12500), '12.500');
+  });
+
+  test('Zeitleiste sortiert, Mock-DB prüft Eingaben und Album-Foto', async () => {
+    assert.deepEqual(sortTimeline([ms('b', 'B', '2025-01-01'), ms('a', 'A', '2020-05-05')]).map((m) => m.id), ['a', 'b']);
+    const db = new MemoryBackend();
+    const a = new MemoryStore(db);
+    await login(a, 'm1@example.org');
+    await a.saveMyProfile({ displayName: 'A', color: 'blue' });
+    await a.createCouple();
+    await assert.rejects(() => a.addMilestone({ title: ' ', icon: 'heart', date: '2024-01-01', note: null, photoId: null }), /Wie heißt/);
+    await assert.rejects(() => a.addMilestone({ title: 'X', icon: 'heart', date: '2024-02-30', note: null, photoId: null }), /gültiges Datum/);
+    await assert.rejects(() => a.addMilestone({ title: 'X', icon: 'heart', date: '2099-01-01', note: null, photoId: null }), /zu weit/);
+    await assert.rejects(() => a.addMilestone({ title: 'X', icon: 'heart', date: '2024-01-01', note: null, photoId: '0f8c2f0a-1b2c-4d3e-8f90-123456789abc' }), /milestone_photo_invalid/);
+    const m = await a.addMilestone({ title: '  Hochzeit ', icon: 'wedding', date: '2025-06-07', note: ' Am See ', photoId: null });
+    assert.equal(m.title, 'Hochzeit');
+    assert.equal(m.note, 'Am See');
+    await a.updateMilestone(m.id, { ...m, title: 'Unsere Hochzeit' });
+    assert.equal((await a.listMilestones())[0].title, 'Unsere Hochzeit');
+    await a.deleteMilestone(m.id);
+    assert.equal((await a.listMilestones()).length, 0);
   });
 });

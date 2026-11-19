@@ -306,6 +306,27 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal((await as(C, 'select * from public.couples')).length, 0);
   });
 
+  test('Meilensteine: Paar teilt sie, Foto nur aus eigenem Album, Foto löschen lässt Meilenstein stehen', async () => {
+    const [ph] = await as<{ id: string }>(A, `insert into public.photos (couple_id, width, height) values ($1, 800, 600) returning id`, [couple]);
+    const [m] = await as<{ id: string; icon: string }>(A, `insert into public.milestones (couple_id, title, icon, date, photo_id) values ($1, 'Verlobung', 'ring', '2025-08-02', $2) returning id, icon`, [couple, ph.id]);
+    assert.equal(m.icon, 'ring');
+    await as(B, `insert into public.milestones (couple_id, title, date) values ($1, 'Erste Wohnung', '2024-03-01')`, [couple]);
+    assert.equal((await as(B, 'select * from public.milestones')).length, 2);
+    await as(B, `update public.milestones set note = 'Am See' where id = $1`, [m.id]);
+    await fails(A, `insert into public.milestones (couple_id, title, date, photo_id) values ($1, 'X', '2024-01-01', gen_random_uuid())`, /milestone_photo_invalid/, [couple]);
+    await fails(A, `insert into public.milestones (couple_id, title, date) values ($1, '  ', '2024-01-01')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.milestones (couple_id, title, icon, date) values ($1, 'X', 'rakete', '2024-01-01')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.milestones (couple_id, title, date) values ($1, 'X', current_date + 4000)`, /check constraint/, [couple]);
+    await as(A, `delete from public.photos where id = $1`, [ph.id]);
+    const [after] = await as<{ photo_id: string | null; note: string }>(A, `select photo_id, note from public.milestones where id = $1`, [m.id]);
+    assert.equal(after.photo_id, null);
+    assert.equal(after.note, 'Am See');
+    assert.equal((await as(C, 'select * from public.milestones')).length, 0);
+    assert.equal((await as(C, `delete from public.milestones returning id`)).length, 0);
+    await fails(C, `insert into public.milestones (couple_id, title, date) values ($1, 'Einbruch', '2024-01-01')`, /row-level security/, [couple]);
+    await fails(null, 'select * from public.milestones', /permission denied/);
+  });
+
   test('Quiz: Paar teilt Antworten, jede Frage einmal pro Runde, Spieler muss zum Paar gehören', async () => {
     await as(A, `insert into public.quiz_answers (couple_id, question_id, player, answer) values ($1, 'lieblingsessen', $2, 'Lasagne')`, [couple, A]);
     await as(B, `insert into public.quiz_answers (couple_id, question_id, player) values ($1, 'traumreise', $2)`, [couple, B]);
@@ -366,7 +387,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) + (select count(*) from public.quiz_answers) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) + (select count(*) from public.quiz_answers) + (select count(*) from public.milestones) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

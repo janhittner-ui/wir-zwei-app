@@ -18,6 +18,7 @@ Die Paar-App von Jan & Vanessa (früher „Wir Zwei“), neu gebaut als echte iP
 - **Einkauf:** schnell eintragen („2 l Milch“ erkennt die Menge), abhaken, automatische Emojis
 - Live-Sync zwischen beiden Handys
 - Einstellungen: Profil, Paar verlassen, Abmelden, **Konto löschen**
+- **Meilensteine** (Tipp auf die Paar-Karte der Startseite): Zusammen seit in Tagen/Wochen/Monaten, kommende besondere Tage (Jahrestag, runde Zahlen wie „1.000 Tage“, Hochzeitstag und Jahrestage eigener Meilensteine), Zeitleiste mit Vorlagen (erstes Date, Verlobung, Hochzeit, …), Notiz und Foto aus dem Album; der nächste besondere Tag steht direkt auf der Paar-Karte
 - **Quiz** (Bereich, standardmäßig über „Weitere Bereiche“ auf der Startseite, in „Anpassen“ als Tab wählbar): Spiel für zwei, abwechselnd bekommt einer eine Frage über den Partner, antwortet oder überspringt, dann „Nächste Frage“; klappt an einem Handy oder live auf beiden; Fortschritt pro Runde, „Eure Antworten“, neue Runde in anderer Reihenfolge. Fragen austauschen: `src/lib/quiz-questions.ts`
 - **Anpassen** (Einstellungen → Anpassen, auch unten auf der Startseite), pro Person gespeichert: Akzentfarbe, Hell/Dunkel/Auto, Bereiche in der Tab-Leiste wählen und sortieren (ausgeblendete Bereiche bleiben über die Startseite erreichbar), Karten der Startseite ein-/ausblenden und sortieren, Paar-Bild aus dem Album, Listen-Reiter, Geburtstage im Kalender, Rezept-Sortierung, Fotos pro Reihe
 - Hell/Dunkel, Schriften und Farben wie in Wir Zwei v40

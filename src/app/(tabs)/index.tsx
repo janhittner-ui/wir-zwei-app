@@ -10,9 +10,10 @@ import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg
 
 import { APP_NAME } from '@/config';
 import { usePrefs } from '@/data/prefs';
-import { useApp, useBirthdays, useEvents, usePhotos, useShopping, useTrips } from '@/data/provider';
+import { useApp, useBirthdays, useEvents, useMilestones, usePhotos, useShopping, useTrips } from '@/data/provider';
 import { upcomingBirthdays } from '@/lib/birthdays';
 import { cmpEvent, dayVerse, fullDate, longDay, parse, rel, together, ymd } from '@/lib/dates';
+import { specialDays, specialText } from '@/lib/milestones';
 import { goArea } from '@/lib/nav';
 import { AREA_LABEL, visible, type Area, type HomeCard } from '@/lib/prefs';
 import { shopEmoji } from '@/lib/shop-emoji';
@@ -49,6 +50,11 @@ export default function Start() {
       {more.length ? <MoreAreas areas={more} /> : null}
 
       <View style={{ alignItems: 'center', gap: 2 }}>
+        {!cards.includes('hero') ? (
+          <Press onPress={() => router.push('/meilensteine')} style={{ padding: 8 }} testID="open-milestones">
+            <T style={{ color: t.blue, fontFamily: fonts.bodySemi }}>❤️ Meilensteine</T>
+          </Press>
+        ) : null}
         <Press onPress={() => router.push('/anpassen')} style={{ flexDirection: 'row', gap: 6, alignItems: 'center', padding: 8 }} testID="open-anpassen">
           <IconSliders color={t.blue} size={18} />
           <T style={{ color: t.blue, fontFamily: fonts.bodySemi }}>Anpassen</T>
@@ -189,10 +195,14 @@ function Hero({ photoId }: { photoId: string | null }) {
   const h = now.getHours();
   const greet = h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
   const tg = couple?.togetherSince ? together(couple.togetherSince) : null;
+  const { items: milestones } = useMilestones();
+  const next = useMemo(() => specialDays(couple?.togetherSince ?? null, milestones)[0], [couple?.togetherSince, milestones]);
+  const hint = next ? specialText(next) : tg?.anniv;
   const white = '#FFFFFF';
 
+  // Tipp auf die Paar-Karte öffnet die Meilensteine
   return (
-    <View style={[styles.hero]} accessibilityLabel="Titelbild">
+    <Press onPress={() => router.push('/meilensteine')} scale={0.985} style={[styles.hero]} accessibilityRole="button" accessibilityLabel="Paar-Karte, öffnet eure Meilensteine" testID="hero">
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%">
         <Defs>
           <Pattern id="stripes" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -222,11 +232,17 @@ function Hero({ photoId }: { photoId: string | null }) {
           <>
             <Text style={[styles.since, { color: white }]}>Zusammen seit {fullDate(parse(couple!.togetherSince!))}</Text>
             <Text style={{ fontFamily: fonts.display, fontSize: 26, lineHeight: 30, color: white }}>{tg.text}</Text>
-            {tg.anniv ? (
-              <View style={styles.anniv}>
-                <Text style={{ color: white, fontFamily: fonts.bodySemi, fontSize: 13 }}>{tg.anniv}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {hint ? (
+                <View style={styles.anniv}>
+                  <Text style={{ color: white, fontFamily: fonts.bodySemi, fontSize: 13 }} testID="hero-next">{next?.emoji ? `${next.emoji} ` : ''}{hint}</Text>
+                </View>
+              ) : null}
+              <View style={[styles.anniv, { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: 'rgba(255,255,255,0.32)' }]}>
+                <Text style={{ color: white, fontFamily: fonts.bodySemi, fontSize: 13 }}>Meilensteine</Text>
+                <IconRight color={white} size={13} />
               </View>
-            ) : null}
+            </View>
           </>
         ) : (
           <>
@@ -237,7 +253,7 @@ function Hero({ photoId }: { photoId: string | null }) {
           </>
         )}
       </View>
-    </View>
+    </Press>
   );
 }
 

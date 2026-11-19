@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, GiftInput, MediaInput, QuizAnswerInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -252,4 +252,24 @@ export function checkQuizAnswer(a: QuizAnswerInput): QuizAnswerInput {
   const answer = (a.answer ?? '').trim() || null;
   if (answer && answer.length > 1000) throw new InputError('Die Antwort darf höchstens 1000 Zeichen haben.');
   return { round, questionId: a.questionId, player: a.player, answer };
+}
+
+const MILESTONE_ICON_KEYS = ['heart', 'date', 'kiss', 'travel', 'home', 'ring', 'wedding', 'baby', 'star'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Meilenstein: Titel 1–80, Datum ab 1900 bis höchstens 10 Jahre in der Zukunft */
+export function checkMilestone(m: MilestoneInput, now = new Date()): MilestoneInput {
+  const title = clean(m.title);
+  if (!title) throw new InputError('Wie heißt der Meilenstein?');
+  if (title.length > 80) throw new InputError('Der Titel darf höchstens 80 Zeichen haben.');
+  const icon = MILESTONE_ICON_KEYS.includes(m.icon) ? m.icon : 'heart';
+  const date = (m.date ?? '').trim();
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00`) : null;
+  if (!d || isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== date) throw new InputError('Bitte ein gültiges Datum wählen.');
+  const max = new Date(now.getFullYear() + 10, now.getMonth(), now.getDate());
+  if (date < '1900-01-01' || d > max) throw new InputError('Das Datum liegt zu weit in der Vergangenheit oder Zukunft.');
+  const note = (m.note ?? '').trim() || null;
+  if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
+  const photoId = m.photoId && UUID_RE.test(m.photoId) ? m.photoId : null;
+  return { title, icon, date, note, photoId };
 }
