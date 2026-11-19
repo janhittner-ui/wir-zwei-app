@@ -41,7 +41,7 @@ export default function Notiz() {
     }
   }, [existing, filled]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/notizen'));
+  const close = () => (router.canGoBack() ? router.back() : router.replace({ pathname: '/listen', params: { seg: 'notizen' } }));
 
   const save = async () => {
     setBusy(true);

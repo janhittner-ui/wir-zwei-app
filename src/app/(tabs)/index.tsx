@@ -86,7 +86,7 @@ export default function Start() {
       ) : null}
 
       <Card>
-        <CardHead title="Einkauf" action={<Button kind="link" title={open.length ? `${open.length} offen` : 'Liste'} onPress={() => router.navigate('/einkauf')} />} />
+        <CardHead title="Einkauf" action={<Button kind="link" title={open.length ? `${open.length} offen` : 'Liste'} onPress={() => router.navigate({ pathname: '/listen', params: { seg: 'einkauf' } })} />} />
         {open.length ? (
           <>
             {open.slice(0, 5).map((s) => (
