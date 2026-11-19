@@ -22,7 +22,7 @@ import { avgStars, dateTitleFor, priceText, restaurantSub, splitRestaurants, sta
 import { DATE_CATEGORY, DATE_SUGGESTIONS, openSuggestions, pickKey, randomDate, splitDates } from '../src/lib/date-ideas';
 import { dots, specialDays, specialText, sortTimeline } from '../src/lib/milestones';
 import { questionOrder, questionText, quizState } from '../src/lib/quiz';
-import { QUIZ_QUESTIONS } from '../src/lib/quiz-questions';
+import { QUIZ_QUESTIONS, QUIZ_TOPICS } from '../src/lib/quiz-questions';
 import { DEFAULT_PREFS, move, normalizePrefs, toggleHidden, visible } from '../src/lib/prefs';
 import { amountText, formatAmount, formatMinutes, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
 
@@ -498,19 +498,38 @@ describe('Anpassen (persönliche Einstellungen)', () => {
 
 describe('Paar-Quiz', () => {
   test('Fragenliste ist gültig (eindeutige ids im erlaubten Format)', () => {
-    assert.ok(QUIZ_QUESTIONS.length > 0);
+    assert.equal(QUIZ_QUESTIONS.length, 1000);
     assert.equal(new Set(QUIZ_QUESTIONS.map((q) => q.id)).size, QUIZ_QUESTIONS.length);
+    // kein Text doppelt (auch nicht mit anderer Groß-/Kleinschreibung)
+    assert.equal(new Set(QUIZ_QUESTIONS.map((q) => q.text.toLowerCase().replace(/\s+/g, ' '))).size, QUIZ_QUESTIONS.length);
     for (const q of QUIZ_QUESTIONS) {
       assert.match(q.id, /^[a-z0-9-]{1,40}$/);
-      assert.ok(q.text.trim().length > 0);
+      assert.ok(q.text.length >= 10 && q.text.length <= 160, q.text);
+      assert.match(q.text, /\?$/, q.text);
+      assert.ok(q.topic && QUIZ_TOPICS[q.topic], q.text);
+      // nur bekannte Platzhalter
+      assert.equal(q.text.replace(/\{partner\}|\{ich\}/g, '').includes('{'), false, q.text);
     }
+    // jedes Thema hat 125 Fragen
+    for (const k of Object.keys(QUIZ_TOPICS)) assert.equal(QUIZ_QUESTIONS.filter((q) => q.topic === k).length, 125, k);
   });
 
-  test('Reihenfolge: gemischt, aber auf beiden Handys gleich; jede Runde anders', () => {
+  test('Runden: 20 Fragen, auf beiden Handys gleich, keine Wiederholung bis alle 1000 dran waren', () => {
     const a = questionOrder('paar-1', 1).map((q) => q.id);
+    assert.equal(a.length, 20);
     assert.deepEqual(questionOrder('paar-1', 1).map((q) => q.id), a);
-    assert.deepEqual([...a].sort(), QUIZ_QUESTIONS.map((q) => q.id).sort());
-    assert.notDeepEqual(questionOrder('paar-1', 2).map((q) => q.id), a);
+    assert.notDeepEqual(questionOrder('paar-2', 1).map((q) => q.id), a);
+    const seen = new Set<string>();
+    for (let r = 1; r <= 50; r++) for (const q of questionOrder('paar-1', r)) seen.add(q.id);
+    assert.equal(seen.size, 1000);
+    // Runde 51 beginnt einen neuen Durchgang, wieder ohne Doppelte in der Runde
+    const r51 = questionOrder('paar-1', 51).map((q) => q.id);
+    assert.equal(new Set(r51).size, 20);
+    // wenige Fragen: Runde hat alle
+    const few = QUIZ_QUESTIONS.slice(0, 7);
+    assert.equal(questionOrder('x', 3, few).length, 7);
+    // die Themen sind gemischt
+    assert.ok(new Set(questionOrder('paar-1', 1).map((q) => q.topic)).size >= 4);
   });
 
   test('Abwechselnd dran, nächste offene Frage, Runde geschafft', async () => {
@@ -555,7 +574,8 @@ describe('Paar-Quiz', () => {
       await jan.addQuizAnswer({ round: st.round, questionId: st.question.id, player: st.player, answer: 'ok' });
       st = quizState(await jan.listQuizAnswers(), ids, seed);
     }
-    assert.equal(st.done, QUIZ_QUESTIONS.length);
+    assert.equal(st.done, 20);
+    assert.equal(st.total, 20);
     // neue Runde
     const r2 = quizState(await jan.listQuizAnswers(), ids, seed, 2);
     assert.equal(r2.round, 2);

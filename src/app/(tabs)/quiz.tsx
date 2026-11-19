@@ -1,7 +1,7 @@
 /**
  * Paar-Quiz als kleines Spiel: Abwechselnd bekommt einer von euch eine Frage, beantwortet sie,
  * dann geht es mit „Nächste Frage“ beim anderen weiter. Klappt an einem Handy zusammen
- * oder an zwei Handys (live). Die Fragen stehen in src/lib/quiz-questions.ts.
+ * oder an zwei Handys (live). Jede Runde hat 20 Fragen aus 1000 (src/lib/quiz-fragen/).
  */
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
@@ -10,6 +10,7 @@ import { friendlyError } from '@/data/errors';
 import { useApp, useQuizAnswers } from '@/data/provider';
 import type { QuizAnswer } from '@/data/types';
 import { questionById, questionText, quizState } from '@/lib/quiz';
+import { QUIZ_TOPICS } from '@/lib/quiz-questions';
 import { fonts, personColors, useTheme } from '@/theme';
 import { Banner, Button, Card, CardHead, Input, Screen, T } from '@/ui/kit';
 
@@ -76,6 +77,7 @@ export default function Quiz() {
           </GameCard>
         ) : st.question && st.player ? (
           <GameCard tone={playerColor} pill={mine ? 'Du bist dran' : `${nameOf(st.player)} ist dran`}>
+            {st.question.topic ? <T v="small" testID="quiz-topic">{QUIZ_TOPICS[st.question.topic].emoji} {QUIZ_TOPICS[st.question.topic].label}</T> : null}
             <T style={{ fontFamily: fonts.display, fontSize: 24, lineHeight: 30 }} testID="quiz-question">
               {questionText(st.question, nameOf(st.player), otherOf(st.player))}
             </T>
@@ -90,8 +92,8 @@ export default function Quiz() {
           </GameCard>
         ) : loaded ? (
           <GameCard tone={{ dot: t.blue, soft: t.blueSoft, ink: t.blue }} pill="Runde geschafft">
-            <T style={{ fontFamily: fonts.display, fontSize: 24, lineHeight: 30 }}>🎉 Alle {st.total} Fragen beantwortet!</T>
-            <T v="muted">Lest euch eure Antworten noch einmal durch. In einer neuen Runde kommen die Fragen in anderer Reihenfolge.</T>
+            <T style={{ fontFamily: fonts.display, fontSize: 24, lineHeight: 30 }}>🎉 Runde {st.round} geschafft!</T>
+            <T v="muted">Lest euch eure Antworten noch einmal durch. In der nächsten Runde warten {st.total} neue Fragen auf euch.</T>
             <Button title="Neue Runde" onPress={() => setRound(st.round + 1)} testID="quiz-new-round" />
           </GameCard>
         ) : null}
