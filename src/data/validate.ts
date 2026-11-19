@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, MediaInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, GiftInput, MediaInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -167,6 +167,26 @@ export function checkMedia(m: MediaInput): MediaInput {
   const rating = m.rating == null ? null : Number(m.rating);
   if (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) throw new InputError('Bewertung bitte mit 1 bis 5 Sternen.');
   return { title, kind: m.kind, platform, note, rating };
+}
+
+export function checkGift(g: GiftInput): GiftInput {
+  if (g.kind !== 'idea' && g.kind !== 'wish') throw new InputError('Unbekannte Art.');
+  const title = clean(g.title);
+  if (!title) throw new InputError(g.kind === 'wish' ? 'Was wünschst du dir?' : 'Was ist die Idee?');
+  if (title.length > 120) throw new InputError('Höchstens 120 Zeichen bitte.');
+  let forUser = g.kind === 'idea' ? g.forUser || null : null;
+  let forName = g.kind === 'idea' ? optional(g.forName) : null;
+  if (forUser) forName = null;
+  if (g.kind === 'idea' && !forUser && !forName) throw new InputError('Für wen ist die Idee?');
+  if (forName && forName.length > 60) throw new InputError('Der Name darf höchstens 60 Zeichen haben.');
+  if (g.kind === 'wish') forUser = null;
+  const occasion = g.kind === 'idea' ? optional(g.occasion) : null;
+  if (occasion && occasion.length > 40) throw new InputError('Der Anlass darf höchstens 40 Zeichen haben.');
+  const link = optional(g.link);
+  if (link && link.length > 500) throw new InputError('Der Link darf höchstens 500 Zeichen haben.');
+  const note = (g.note ?? '').trim() || null;
+  if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
+  return { kind: g.kind, title, forUser, forName, occasion, link, note, wishId: g.kind === 'idea' ? g.wishId ?? null : null };
 }
 
 export function checkShopping(i: ShoppingInput): ShoppingInput {

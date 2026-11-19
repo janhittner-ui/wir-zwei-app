@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -85,6 +85,14 @@ export interface DataStore {
   updateMedia(id: string, m: MediaInput): Promise<void>;
   setMediaDone(id: string, done: boolean): Promise<void>;
   deleteMedia(id: string): Promise<void>;
+
+  // Geschenke (Ideen für einen selbst liefert die Datenbank nie aus)
+  listGifts(): Promise<Gift[]>;
+  addGift(g: GiftInput): Promise<Gift>;
+  /** Art und Wunsch-Bezug bleiben, der Rest wird ersetzt */
+  updateGift(id: string, g: GiftInput): Promise<void>;
+  setGiftDone(id: string, done: boolean): Promise<void>;
+  deleteGift(id: string): Promise<void>;
 
   // Einkauf
   listShopping(): Promise<ShoppingItem[]>;

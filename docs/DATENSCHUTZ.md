@@ -12,7 +12,7 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 | „Zusammen seit“, Paar-Namen | Startseite | Tabelle `couples` |
 | Termine (Titel, Datum, Uhrzeit, Notiz, für wen) | Kalender | Tabelle `events` |
 | Einkaufseinträge | Einkaufsliste | Tabelle `shopping_items` |
-| Geburtstage, Notizen, Rezepte, Reisen + Packlisten | Die jeweiligen Bereiche | Tabellen `birthdays`, `notes`, `recipes`, `trips`, `trip_items` |
+| Geburtstage, Notizen, Rezepte, Reisen + Packlisten, Filme & Serien, Geschenkideen + Wünsche | Die jeweiligen Bereiche | Tabellen `birthdays`, `notes`, `recipes`, `trips`, `trip_items`, `media`, `gifts` |
 | Fotos (verkleinert auf max. 1600 Pixel, JPEG) und Bildunterschrift | Gemeinsames Album | **Privater** Speicher-Bucket `photos` (Frankfurt) + Tabelle `photos` |
 
 Nicht gespeichert: Passwörter im Klartext, Telefonnummer, Standort (auch nicht aus Fotos: die App liest keine Foto-Zusatzdaten aus und speichert jedes Bild neu, ohne Aufnahmeort), Kontakte, Geräte-IDs, Werbe-IDs, Nutzungsstatistiken.
@@ -28,6 +28,7 @@ Nicht gespeichert: Passwörter im Klartext, Telefonnummer, Standort (auch nicht 
 - Paar-Kopplung nur über einen 8-stelligen Einladungscode, der nach 48 Stunden abläuft und nur einmal gilt. Ein Paar hat höchstens zwei Mitglieder.
 - Verbindung immer verschlüsselt (HTTPS/TLS), Daten beim Hoster verschlüsselt gespeichert (Encryption at Rest).
 - Die Anmeldung liegt auf dem iPhone im **Schlüsselbund** (nur dieses Gerät, nicht im Backup auf andere Geräte übertragbar).
+- **Geschenkideen für den Partner** liefert die Datenbank dem Partner gar nicht aus (auch nicht über Live-Sync). Er kann sie weder sehen noch ändern oder löschen.
 - **Fotos** liegen in einem privaten Speicher. Es gibt keine öffentlichen Links: Die App holt sich für die Anzeige Links, die nach einer Stunde ablaufen, und nur Mitglieder des Paares bekommen sie (Regeln im Speicher, mit Tests abgesichert). Hochladen geht nur in den Ordner des eigenen Paares und nur mit passendem Album-Eintrag.
 - In der App steckt nur der öffentliche „publishable key“. Der geheime Schlüssel wird nirgends in der App verwendet.
 

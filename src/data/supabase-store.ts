@@ -11,10 +11,10 @@ import { secureStorage } from './secure-storage';
 import { base64ToBytes } from '../lib/base64';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -68,6 +68,12 @@ const toMedia = (r: Row): Media => ({
   doneAt: r.done_at, createdBy: r.created_by, createdAt: r.created_at,
 });
 const MEDIA_COLS = 'id, title, kind, platform, note, done, rating, done_at, created_by, created_at';
+const toGift = (r: Row): Gift => ({
+  id: r.id, kind: r.kind, title: r.title, forUser: r.for_user, forName: r.for_name, occasion: r.occasion, link: r.link,
+  note: r.note, done: r.done, wishId: r.wish_id, createdBy: r.created_by, createdAt: r.created_at,
+});
+const GIFT_COLS = 'id, kind, title, for_user, for_name, occasion, link, note, done, wish_id, created_by, created_at';
+const giftRow = (v: GiftInput) => ({ title: v.title, for_user: v.forUser, for_name: v.forName, occasion: v.occasion, link: v.link, note: v.note });
 const NOTE_COLS = 'id, title, body, color, created_by, updated_by, updated_at';
 const BD_COLS = 'id, name, month, day, year, note, created_by';
 const eventRow = (e: EventInput) => ({ title: e.title, date: e.date, time: e.time, note: e.note, who: e.who });
@@ -422,9 +428,29 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('media').delete().eq('id', id));
   }
 
+  // ---------- Geschenke ----------
+  async listGifts() {
+    const r = must(await this.sb.from('gifts').select(GIFT_COLS).eq('couple_id', await this.coupleId()).order('created_at')) as Row[];
+    return r.map(toGift);
+  }
+  async addGift(g: GiftInput) {
+    const v = checkGift(g);
+    return toGift(one(await this.sb.from('gifts').insert({ ...giftRow(v), kind: v.kind, wish_id: v.wishId ?? null, couple_id: await this.coupleId() })
+      .select(GIFT_COLS).single()));
+  }
+  async updateGift(id: string, g: GiftInput) {
+    must(await this.sb.from('gifts').update(giftRow(checkGift(g))).eq('id', id));
+  }
+  async setGiftDone(id: string, done: boolean) {
+    must(await this.sb.from('gifts').update({ done }).eq('id', id).eq('kind', 'idea'));
+  }
+  async deleteGift(id: string) {
+    must(await this.sb.from('gifts').delete().eq('id', id));
+  }
+
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

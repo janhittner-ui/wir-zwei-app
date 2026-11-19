@@ -84,6 +84,7 @@ function Root() {
           <Stack.Screen name="reise-bearbeiten" options={{ presentation: 'modal' }} />
           <Stack.Screen name="foto" options={{ presentation: 'fullScreenModal', animation: 'fade', contentStyle: { backgroundColor: '#000' } }} />
           <Stack.Screen name="film" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="geschenk" options={{ presentation: 'modal' }} />
           <Stack.Screen name="kochen" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
           <Stack.Screen name="einstellungen" options={{ presentation: 'modal' }} />
         </Stack.Protected>

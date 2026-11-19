@@ -7,7 +7,7 @@ import { AppState } from 'react-native';
 
 import { createStore } from './index';
 import type { DataStore } from './store';
-import type { Birthday, CalendarEvent, Media, Note, Photo, Recipe, Trip, TripItem, Couple, Profile, Session, ShoppingItem } from './types';
+import type { Birthday, CalendarEvent, Gift, Media, Note, Photo, Recipe, Trip, TripItem, Couple, Profile, Session, ShoppingItem } from './types';
 
 type Status = 'booting' | 'signedOut' | 'loading' | 'needsProfile' | 'needsCouple' | 'ready' | 'error';
 
@@ -99,7 +99,7 @@ export function useApp(): AppData {
 }
 
 /** Lädt eine Liste, hört auf Live-Änderungen und lädt beim Zurückkehren in die App neu. */
-function useLiveList<T>(table: 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media', fetcher: (s: DataStore) => Promise<T[]>) {
+function useLiveList<T>(table: 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts', fetcher: (s: DataStore) => Promise<T[]>) {
   const { store, status } = useApp();
   const [items, setItems] = useState<T[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -143,4 +143,5 @@ export const useTrips = () => useLiveList<Trip>('trips', (s) => s.listTrips());
 export const useTripItems = () => useLiveList<TripItem>('trips', (s) => s.listTripItems());
 export const usePhotos = () => useLiveList<Photo>('photos', (s) => s.listPhotos());
 export const useMedia = () => useLiveList<Media>('media', (s) => s.listMedia());
+export const useGifts = () => useLiveList<Gift>('gifts', (s) => s.listGifts());
 export const useShopping = () => useLiveList<ShoppingItem>('shopping', (s) => s.listShopping());

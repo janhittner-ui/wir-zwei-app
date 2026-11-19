@@ -144,6 +144,31 @@ export interface Media {
 }
 export type MediaInput = Pick<Media, 'title' | 'kind' | 'platform' | 'note' | 'rating'>;
 
+export type GiftKind = 'idea' | 'wish';
+/**
+ * Geschenk: eine Idee (für den Partner oder jemand anderen) oder ein eigener Wunsch.
+ * Ideen FÜR einen selbst bekommt man nie zu sehen (Überraschung, von der Datenbank geprüft).
+ */
+export interface Gift {
+  id: string;
+  kind: GiftKind;
+  title: string;
+  /** Idee für den Partner (Nutzer-ID) */
+  forUser: string | null;
+  /** Idee für jemand anderen, z. B. "Mama" */
+  forName: string | null;
+  occasion: string | null;
+  link: string | null;
+  note: string | null;
+  /** Idee schon besorgt */
+  done: boolean;
+  /** Idee, die aus diesem Wunsch des Partners entstand */
+  wishId: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+export type GiftInput = Pick<Gift, 'kind' | 'title' | 'forUser' | 'forName' | 'occasion' | 'link' | 'note'> & { wishId?: string | null };
+
 export type EventInput = Omit<CalendarEvent, 'id' | 'createdBy'>;
 export type ShoppingInput = Pick<ShoppingItem, 'text' | 'qty'>;
 
