@@ -1,6 +1,6 @@
 /**
  * Kalender: Monatsansicht mit farbigen Punkten pro Person (orange = Geburtstag),
- * darunter die Einträge des gewählten Tages. Zweiter Reiter: Geburtstagsliste mit Suche.
+ * darunter die Einträge des gewählten Tages. Weitere Reiter: Geburtstagsliste mit Suche, Reisen.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,15 +15,16 @@ import { BirthdayRow } from '@/ui/birthday-row';
 import { EventRow } from '@/ui/event-row';
 import { IconLeft, IconPlus, IconRight, IconX } from '@/ui/icons';
 import { Banner, Button, Card, CardHead, Input, Press, Screen, Segmented, T } from '@/ui/kit';
+import { TripsView } from '@/ui/trips-view';
 
-type Seg = 'monat' | 'geb';
+type Seg = 'monat' | 'geb' | 'reisen';
 
 export default function Kalender() {
   const t = useTheme();
   const params = useLocalSearchParams<{ seg?: string }>();
-  const [seg, setSeg] = useState<Seg>(params.seg === 'geb' ? 'geb' : 'monat');
+  const [seg, setSeg] = useState<Seg>(params.seg === 'geb' || params.seg === 'reisen' ? params.seg : 'monat');
   useEffect(() => {
-    if (params.seg === 'geb' || params.seg === 'monat') setSeg(params.seg);
+    if (params.seg === 'geb' || params.seg === 'monat' || params.seg === 'reisen') setSeg(params.seg);
   }, [params.seg]);
 
   return (
@@ -33,9 +34,9 @@ export default function Kalender() {
           <T v="eyebrow">Gemeinsam planen</T>
           <T v="display">Kalender</T>
         </View>
-        <Segmented<Seg> value={seg} onChange={setSeg} options={[{ key: 'monat', label: 'Monat' }, { key: 'geb', label: 'Geburtstage' }]} />
+        <Segmented<Seg> value={seg} onChange={setSeg} options={[{ key: 'monat', label: 'Monat' }, { key: 'geb', label: 'Geburtstage' }, { key: 'reisen', label: 'Reisen' }]} />
       </View>
-      {seg === 'monat' ? <MonthView /> : <BirthdayList />}
+      {seg === 'monat' ? <MonthView /> : seg === 'geb' ? <BirthdayList /> : <TripsView />}
     </Screen>
   );
 }

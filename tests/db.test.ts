@@ -168,6 +168,33 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(null, 'select * from public.recipes', /permission denied/);
   });
 
+  test('Reisen + Packliste: Paar teilt sie, Daten geprüft, nichts landet bei fremden Reisen', async () => {
+    const [wish] = await as<{ id: string }>(A, `insert into public.trips (couple_id, title) values ($1, 'Lofoten') returning id`, [couple]);
+    const [trip] = await as<{ id: string }>(B, `insert into public.trips (couple_id, title, start_date, end_date) values ($1, 'Toskana', '2027-06-01', '2027-06-14') returning id`, [couple]);
+    assert.equal((await as(A, 'select * from public.trips')).length, 2);
+    await fails(A, `insert into public.trips (couple_id, title, end_date) values ($1, 'X', '2027-01-01')`, /trips_dates/, [couple]);
+    await fails(A, `insert into public.trips (couple_id, title, start_date, end_date) values ($1, 'X', '2027-01-10', '2027-01-01')`, /trips_dates/, [couple]);
+    await fails(A, `insert into public.trips (couple_id, title, start_date, end_date) values ($1, 'X', '2027-01-01', '2029-01-01')`, /trips_dates/, [couple]);
+    await fails(A, `insert into public.trips (couple_id, title) values ($1, '  ')`, /check constraint/, [couple]);
+    const [it] = await as<{ id: string }>(A, `insert into public.trip_items (couple_id, trip_id, text) values ($1, $2, 'Sonnencreme') returning id`, [couple, trip.id]);
+    await as(B, `update public.trip_items set done = true where id = $1`, [it.id]);
+    assert.equal((await as<{ done: boolean }>(A, 'select done from public.trip_items'))[0].done, true);
+    await fails(A, `update public.trip_items set trip_id = $2 where id = $1`, /immutable_column/, [it.id, wish.id]);
+    // Reise eines anderen Paares (direkt angelegt): kein Eintrag darf dort landen
+    await db.exec(`select set_config('request.jwt.claim.sub', '', false)`);
+    const other = (await db.query<{ id: string }>(`insert into public.couples default values returning id`)).rows[0].id;
+    const ot = (await db.query<{ id: string }>(`insert into public.trips (couple_id, title, created_by) values ($1, 'Fremd', null) returning id`, [other])).rows[0].id;
+    await fails(A, `insert into public.trip_items (couple_id, trip_id, text) values ($1, $2, 'x')`, /trip_mismatch/, [couple, ot]);
+    await db.exec(`delete from public.couples where id = '${other}'`);
+    assert.equal((await as(C, 'select * from public.trips')).length, 0);
+    assert.equal((await as(C, 'select * from public.trip_items')).length, 0);
+    await fails(C, `insert into public.trips (couple_id, title) values ($1, 'Einbruch')`, /row-level security/, [couple]);
+    await fails(null, 'select * from public.trip_items', /permission denied/);
+    // Reise löschen nimmt die Packliste mit
+    await as(A, `delete from public.trips where id = $1`, [wish.id]);
+    assert.equal((await as(A, 'select * from public.trip_items')).length, 1);
+  });
+
   test('Geburtstage: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
     await as(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'Oma Helga', 3, 14, 1941)`, [couple]);
     await as(B, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Schaltjahr-Kind', 2, 29)`, [couple]);
@@ -218,7 +245,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, NoteInput, RecipeInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, NoteInput, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -113,6 +113,31 @@ export function checkRecipe(r: RecipeInput): RecipeInput {
   const source = clean(r.source) || null;
   if (source && source.length > 500) throw new InputError('Die Quelle darf höchstens 500 Zeichen haben.');
   return { title, servings, minutes, ingredients, steps, source };
+}
+
+export function checkTrip(tr: TripInput): TripInput {
+  const title = clean(tr.title);
+  if (!title) throw new InputError('Wohin soll es gehen?');
+  if (title.length > 120) throw new InputError('Das Ziel darf höchstens 120 Zeichen haben.');
+  const startDate = tr.startDate || null;
+  const endDate = startDate ? tr.endDate || null : null;
+  if (startDate && !isValidDate(startDate)) throw new InputError('Das Startdatum stimmt nicht.');
+  if (endDate && !isValidDate(endDate)) throw new InputError('Das Enddatum stimmt nicht.');
+  if (startDate && endDate) {
+    const days = (Date.parse(endDate) - Date.parse(startDate)) / 86400000;
+    if (days < 0) throw new InputError('Die Rückreise kann nicht vor der Abreise sein.');
+    if (days > 366) throw new InputError('Eine Reise darf höchstens ein Jahr dauern.');
+  }
+  const note = (tr.note ?? '').trim() || null;
+  if (note && note.length > 2000) throw new InputError('Die Notiz darf höchstens 2000 Zeichen haben.');
+  return { title, startDate, endDate, note };
+}
+
+export function checkTripItem(text: string): string {
+  const v = clean(text);
+  if (!v) throw new InputError('Was soll mit?');
+  if (v.length > 120) throw new InputError('Höchstens 120 Zeichen bitte.');
+  return v;
 }
 
 export function checkShopping(i: ShoppingInput): ShoppingInput {

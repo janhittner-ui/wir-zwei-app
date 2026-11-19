@@ -10,10 +10,10 @@ import { AppState } from 'react-native';
 import { secureStorage } from './secure-storage';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -49,6 +49,15 @@ const toRecipe = (r: Row): Recipe => ({
   source: r.source, favorite: r.favorite, createdBy: r.created_by, updatedAt: r.updated_at,
 });
 const RECIPE_COLS = 'id, title, servings, minutes, ingredients, steps, source, favorite, created_by, updated_at';
+const toTrip = (r: Row): Trip => ({
+  id: r.id, title: r.title, startDate: r.start_date, endDate: r.end_date, note: r.note, createdBy: r.created_by,
+});
+const TRIP_COLS = 'id, title, start_date, end_date, note, created_by';
+const toTripItem = (r: Row): TripItem => ({
+  id: r.id, tripId: r.trip_id, text: r.text, done: r.done, createdBy: r.created_by, createdAt: r.created_at,
+});
+const TRIP_ITEM_COLS = 'id, trip_id, text, done, created_by, created_at';
+const tripRow = (v: TripInput) => ({ title: v.title, start_date: v.startDate, end_date: v.endDate, note: v.note });
 const NOTE_COLS = 'id, title, body, color, created_by, updated_by, updated_at';
 const BD_COLS = 'id, name, month, day, year, note, created_by';
 const eventRow = (e: EventInput) => ({ title: e.title, date: e.date, time: e.time, note: e.note, who: e.who });
@@ -273,9 +282,41 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('recipes').delete().eq('id', id));
   }
 
+  // ---------- Reisen ----------
+  async listTrips() {
+    const r = must(await this.sb.from('trips').select(TRIP_COLS).eq('couple_id', await this.coupleId())
+      .order('start_date', { ascending: true, nullsFirst: false }).order('created_at')) as Row[];
+    return r.map(toTrip);
+  }
+  async addTrip(input: TripInput) {
+    return toTrip(one(await this.sb.from('trips').insert({ ...tripRow(checkTrip(input)), couple_id: await this.coupleId() }).select(TRIP_COLS).single()));
+  }
+  async updateTrip(id: string, input: TripInput) {
+    must(await this.sb.from('trips').update(tripRow(checkTrip(input))).eq('id', id));
+  }
+  async deleteTrip(id: string) {
+    must(await this.sb.from('trips').delete().eq('id', id));
+  }
+  async listTripItems(tripId?: string) {
+    let q = this.sb.from('trip_items').select(TRIP_ITEM_COLS).eq('couple_id', await this.coupleId());
+    if (tripId) q = q.eq('trip_id', tripId);
+    const r = must(await q.order('created_at')) as Row[];
+    return r.map(toTripItem);
+  }
+  async addTripItem(tripId: string, text: string) {
+    return toTripItem(one(await this.sb.from('trip_items').insert({ trip_id: tripId, text: checkTripItem(text), couple_id: await this.coupleId() })
+      .select(TRIP_ITEM_COLS).single()));
+  }
+  async setTripItemDone(id: string, done: boolean) {
+    must(await this.sb.from('trip_items').update({ done }).eq('id', id));
+  }
+  async deleteTripItem(id: string) {
+    must(await this.sb.from('trip_items').delete().eq('id', id));
+  }
+
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

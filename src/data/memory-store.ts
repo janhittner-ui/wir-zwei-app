@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -27,6 +27,8 @@ type ShopRow = ShoppingItem & { coupleId: string };
 type BdRow = Birthday & { coupleId: string };
 type NoteRow = Note & { coupleId: string };
 type RecipeRow = Recipe & { coupleId: string };
+type TripRow = Trip & { coupleId: string };
+type TripItemRow = TripItem & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -40,6 +42,8 @@ export class MemoryBackend {
   birthdays = new Map<string, BdRow>();
   notes = new Map<string, NoteRow>();
   recipes = new Map<string, RecipeRow>();
+  trips = new Map<string, TripRow>();
+  tripItems = new Map<string, TripItemRow>();
   /** Nur für Tests: feste Uhrzeit */
   now = () => Date.now();
   /** Der Code, den die "E-Mail" enthalten würde */
@@ -187,6 +191,8 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.birthdays) if (v.coupleId === cid) this.db.birthdays.delete(k);
       for (const [k, v] of this.db.notes) if (v.coupleId === cid) this.db.notes.delete(k);
       for (const [k, v] of this.db.recipes) if (v.coupleId === cid) this.db.recipes.delete(k);
+      for (const [k, v] of this.db.trips) if (v.coupleId === cid) this.db.trips.delete(k);
+      for (const [k, v] of this.db.tripItems) if (v.coupleId === cid) this.db.tripItems.delete(k);
       for (const [k, v] of this.db.invites) if (v.coupleId === cid) this.db.invites.delete(k);
     } else {
       this.db.emit('couple', cid);
@@ -204,6 +210,8 @@ export class MemoryStore implements DataStore {
     for (const s of this.db.shopping.values()) if (s.createdBy === me) s.createdBy = null;
     for (const b of this.db.birthdays.values()) if (b.createdBy === me) b.createdBy = null;
     for (const r of this.db.recipes.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.trips.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.tripItems.values()) if (r.createdBy === me) r.createdBy = null;
     for (const n of this.db.notes.values()) {
       if (n.createdBy === me) n.createdBy = null;
       if (n.updatedBy === me) n.updatedBy = null;
@@ -352,6 +360,68 @@ export class MemoryStore implements DataStore {
     if (!r) return;
     this.db.recipes.delete(id);
     this.db.emit('recipes', r.coupleId);
+  }
+
+  // ---------- Reisen ----------
+  private ownTrip(id: string) {
+    const r = this.db.trips.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  private ownTripItem(id: string) {
+    const r = this.db.tripItems.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  async listTrips() {
+    const cid = this.coupleId();
+    return [...this.db.trips.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => (a.startDate ?? '9999').localeCompare(b.startDate ?? '9999')).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addTrip(input: TripInput) {
+    const cid = this.coupleId();
+    const row: TripRow = { ...checkTrip(input), id: uuid(), coupleId: cid, createdBy: this.uid() };
+    this.db.trips.set(row.id, row);
+    this.db.emit('trips', cid);
+    const { coupleId, ...r } = row;
+    return { ...r };
+  }
+  async updateTrip(id: string, input: TripInput) {
+    const r = this.ownTrip(id);
+    if (!r) return;
+    Object.assign(r, checkTrip(input));
+    this.db.emit('trips', r.coupleId);
+  }
+  async deleteTrip(id: string) {
+    const r = this.ownTrip(id);
+    if (!r) return;
+    this.db.trips.delete(id);
+    for (const [k, v] of this.db.tripItems) if (v.tripId === id) this.db.tripItems.delete(k);
+    this.db.emit('trips', r.coupleId);
+  }
+  async listTripItems(tripId?: string) {
+    const cid = this.coupleId();
+    return [...this.db.tripItems.values()].filter((r) => r.coupleId === cid && (!tripId || r.tripId === tripId))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addTripItem(tripId: string, text: string) {
+    const cid = this.coupleId();
+    if (!this.ownTrip(tripId)) throw new Error('trip_mismatch');
+    const row: TripItemRow = { id: uuid(), tripId, text: checkTripItem(text), done: false, coupleId: cid, createdBy: this.uid(), createdAt: this.stamp() };
+    this.db.tripItems.set(row.id, row);
+    this.db.emit('trips', cid);
+    const { coupleId, ...r } = row;
+    return { ...r };
+  }
+  async setTripItemDone(id: string, done: boolean) {
+    const r = this.ownTripItem(id);
+    if (!r) return;
+    r.done = !!done;
+    this.db.emit('trips', r.coupleId);
+  }
+  async deleteTripItem(id: string) {
+    const r = this.ownTripItem(id);
+    if (!r) return;
+    this.db.tripItems.delete(id);
+    this.db.emit('trips', r.coupleId);
   }
 
   // ---------- Einkauf ----------

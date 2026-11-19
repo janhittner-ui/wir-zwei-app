@@ -12,6 +12,7 @@ Die Paar-App von Jan & Vanessa (früher „Wir Zwei“), neu gebaut als echte iP
 - **Geburtstage:** Liste mit Suche, nächster Geburtstag auf der Startseite, orange Punkte im Kalender, „wird 30“ bei bekanntem Jahr, 29. Februar wird in Nicht-Schaltjahren am 28. gefeiert
 - **Notizen:** farbige Zettel (gelb, grün, blau, rosa), Suche ab 4 Notizen, „zuletzt geändert von“, live auf beiden Handys
 - **Rezepte:** eigener Tab mit Suche und Favoriten; Portionen umrechnen (Mengen wie „1/2 TL“ oder „1½ l“ werden erkannt), Zutaten mit einem Tipp auf die Einkaufsliste (ohne Doppelte), Kochmodus Schritt für Schritt mit großer Schrift, Bildschirm bleibt an
+- **Reisen** (Kalender, Reiter „Reisen“): geplante Reisen mit Countdown, Wunschziele ohne Datum, vergangene Reisen; je Reise eine gemeinsame Packliste (abhaken, wischen zum Löschen, Vorschläge); nächste Reise auf der Startseite
 - **Einkauf:** schnell eintragen („2 l Milch“ erkennt die Menge), abhaken, automatische Emojis
 - Live-Sync zwischen beiden Handys
 - Einstellungen: Profil, Paar verlassen, Abmelden, **Konto löschen**

@@ -13,6 +13,8 @@ import { splitQty } from '../src/lib/qty';
 import { birthdayIn, nextBirthday, searchKey, upcomingBirthdays } from '../src/lib/birthdays';
 import { shopEmoji } from '../src/lib/shop-emoji';
 import { VERSES } from '../src/lib/verses';
+import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } from '../src/lib/trips';
+import type { Trip } from '../src/data/types';
 import { amountText, formatAmount, formatMinutes, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
 
 async function login(store: MemoryStore, email: string) {
@@ -124,6 +126,30 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.equal((await fremd.listNotes()).length, 0);
     await fremd.deleteNote(a.id);
     assert.equal((await jan.listNotes()).length, 2);
+  });
+
+  test('Reisen: Wunschziel, geplant, Packliste, Prüfungen, Fremde sehen nichts', async () => {
+    const wish = await jan.addTrip({ title: ' Lofoten ', startDate: '2027-01-01', endDate: null, note: '' });
+    assert.equal(wish.title, 'Lofoten');
+    await jan.updateTrip(wish.id, { title: 'Lofoten', startDate: null, endDate: '2027-01-05', note: null });
+    assert.equal((await vanessa.listTrips())[0].endDate, null); // ohne Start kein Ende
+    const trip = await vanessa.addTrip({ title: 'Toskana', startDate: '2027-06-01', endDate: '2027-06-14', note: 'Ferienhaus' });
+    await assert.rejects(() => jan.addTrip({ title: 'X', startDate: '2027-06-10', endDate: '2027-06-01', note: null }), /Rückreise/);
+    await assert.rejects(() => jan.addTrip({ title: 'X', startDate: '2027-01-01', endDate: '2028-06-01', note: null }), /ein Jahr/);
+    await assert.rejects(() => jan.addTrip({ title: ' ', startDate: null, endDate: null, note: null }), /Wohin/);
+    const it = await jan.addTripItem(trip.id, ' Sonnencreme ');
+    await vanessa.setTripItemDone(it.id, true);
+    assert.deepEqual((await jan.listTripItems(trip.id)).map((x) => [x.text, x.done]), [['Sonnencreme', true]]);
+    await assert.rejects(() => jan.addTripItem(trip.id, '  '), /Was soll mit/);
+    assert.equal((await fremd.listTrips()).length, 0);
+    assert.equal((await fremd.listTripItems()).length, 0);
+    await assert.rejects(() => fremd.addTripItem(trip.id, 'Einbruch'), /trip_mismatch/);
+    await fremd.deleteTrip(trip.id);
+    await fremd.setTripItemDone(it.id, false);
+    assert.equal((await jan.listTripItems()).length, 1);
+    assert.equal((await jan.listTripItems())[0].done, true);
+    await jan.deleteTrip(trip.id);
+    assert.equal((await jan.listTripItems()).length, 0); // Packliste geht mit
   });
 
   test('Rezepte: anlegen, Favorit, geprüft, Fremde sehen nichts', async () => {
@@ -285,5 +311,29 @@ describe('Helfer', () => {
     assert.deepEqual(parseSteps('1. Wasser kochen\n\n2) Nudeln rein\n- Abgießen'), ['Wasser kochen', 'Nudeln rein', 'Abgießen']);
     assert.equal(formatMinutes(75), '1 Std. 15 Min.');
     assert.equal(formatMinutes(45), '45 Min.');
+  });
+
+  test('Reisen: Status, Zeitraum, Countdown', () => {
+    const tr = (startDate: string | null, endDate: string | null = null, title = 'X'): Trip => ({ id: title, title, startDate, endDate, note: null, createdBy: null });
+    const now = new Date(2027, 5, 3, 15, 0); // 3. Juni 2027
+    assert.equal(tripStatus(tr(null), now), 'wish');
+    assert.equal(tripStatus(tr('2027-06-10'), now), 'upcoming');
+    assert.equal(tripStatus(tr('2027-06-01', '2027-06-14'), now), 'now');
+    assert.equal(tripStatus(tr('2027-06-03'), now), 'now');
+    assert.equal(tripStatus(tr('2027-05-01', '2027-06-02'), now), 'past');
+    assert.equal(tripCountdown(tr('2027-06-26'), now), 'in 23 Tagen');
+    assert.equal(tripCountdown(tr('2027-06-04'), now), 'morgen geht’s los');
+    assert.equal(tripCountdown(tr('2027-06-01', '2027-06-14'), now), 'Tag 3 von 14');
+    assert.equal(tripCountdown(tr('2027-06-03'), now), 'heute');
+    assert.equal(tripDays(tr('2027-06-01', '2027-06-14')), 14);
+    assert.equal(tripRange(tr('2027-06-01', '2027-06-14')), '1.–14. Juni 2027');
+    assert.equal(tripRange(tr('2027-06-28', '2027-07-03')), '28. Juni – 3. Juli 2027');
+    assert.equal(tripRange(tr('2026-12-30', '2027-01-02')), '30. Dezember 2026 – 2. Januar 2027');
+    assert.equal(tripRange(tr('2027-05-05')), '5. Mai 2027');
+    const g = groupTrips([tr(null, null, 'Rom'), tr('2027-08-01', null, 'B'), tr('2027-06-10', null, 'A'), tr('2027-01-01', null, 'Alt'), tr(null, null, 'Island')], now);
+    assert.deepEqual(g.planned.map((x) => x.title), ['A', 'B']);
+    assert.deepEqual(g.wishes.map((x) => x.title), ['Island', 'Rom']);
+    assert.deepEqual(g.past.map((x) => x.title), ['Alt']);
+    assert.equal(nextTrip([tr(null)], now), null);
   });
 });

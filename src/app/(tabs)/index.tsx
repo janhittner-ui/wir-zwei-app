@@ -1,16 +1,17 @@
-/** Start: "Zusammen seit", Tagesvers, nächste Termine, offene Einkäufe. */
+/** Start: "Zusammen seit", Tagesvers, nächste Termine, Geburtstag, nächste Reise, offene Einkäufe. */
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg';
 
 import { APP_NAME } from '@/config';
-import { useApp, useBirthdays, useEvents, useShopping } from '@/data/provider';
+import { useApp, useBirthdays, useEvents, useShopping, useTrips } from '@/data/provider';
 import { upcomingBirthdays } from '@/lib/birthdays';
 import { cmpEvent, dayVerse, fullDate, longDay, parse, rel, together, ymd } from '@/lib/dates';
 import { shopEmoji } from '@/lib/shop-emoji';
+import { nextTrip, tripCountdown, tripRange, tripStatus } from '@/lib/trips';
 import { fonts, useTheme } from '@/theme';
-import { IconGear, IconPencil, IconPlus } from '@/ui/icons';
+import { IconGear, IconPencil, IconPlus, IconSuitcase } from '@/ui/icons';
 import { EventRow } from '@/ui/event-row';
 import { Button, Card, CardHead, DateBadge, Press, Screen, T } from '@/ui/kit';
 
@@ -21,6 +22,8 @@ export default function Start() {
   const { items: shopping } = useShopping();
   const { items: birthdays } = useBirthdays();
   const nextBd = useMemo(() => upcomingBirthdays(birthdays)[0], [birthdays]);
+  const { items: trips } = useTrips();
+  const trip = useMemo(() => nextTrip(trips), [trips]);
 
   const todayIso = ymd(new Date());
   const upcoming = useMemo(() => events.filter((e) => e.date >= todayIso).sort(cmpEvent).slice(0, 4), [events, todayIso]);
@@ -66,6 +69,21 @@ export default function Start() {
           </>
         )}
       </Card>
+
+      {trip ? (
+        <Card>
+          <CardHead title={tripStatus(trip) === 'now' ? 'Gerade unterwegs' : 'Nächste Reise'} action={<Button kind="link" title="Reisen" onPress={() => router.navigate({ pathname: '/kalender', params: { seg: 'reisen' } })} />} />
+          <Press onPress={() => router.push({ pathname: '/reise', params: { id: trip.id } })} scale={0.98} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }} testID="start-trip">
+            <View style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: t.blueSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <IconSuitcase color={t.blue} size={26} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <T v="big" numberOfLines={1}>{trip.title}</T>
+              <T v="muted">{tripCountdown(trip)} · {tripRange(trip)}</T>
+            </View>
+          </Press>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHead title="Einkauf" action={<Button kind="link" title={open.length ? `${open.length} offen` : 'Liste'} onPress={() => router.navigate('/einkauf')} />} />

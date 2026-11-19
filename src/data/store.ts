@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -59,6 +59,17 @@ export interface DataStore {
   updateRecipe(id: string, r: RecipeInput): Promise<void>;
   setRecipeFavorite(id: string, favorite: boolean): Promise<void>;
   deleteRecipe(id: string): Promise<void>;
+
+  // Reisen (Live-Sync 'trips' meldet auch Änderungen an Packlisten)
+  listTrips(): Promise<Trip[]>;
+  addTrip(t: TripInput): Promise<Trip>;
+  updateTrip(id: string, t: TripInput): Promise<void>;
+  deleteTrip(id: string): Promise<void>;
+  /** Packlisten-Einträge; ohne tripId alle des Paares */
+  listTripItems(tripId?: string): Promise<TripItem[]>;
+  addTripItem(tripId: string, text: string): Promise<TripItem>;
+  setTripItemDone(id: string, done: boolean): Promise<void>;
+  deleteTripItem(id: string): Promise<void>;
 
   // Einkauf
   listShopping(): Promise<ShoppingItem[]>;
