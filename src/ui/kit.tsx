@@ -204,11 +204,14 @@ export function Loading() {
   );
 }
 
-/** Umschalter wie in der Web-App (z. B. "Monat | Geburtstage"). */
-export function Segmented<K extends string>({ value, options, onChange }: { value: K; options: { key: K; label: string }[]; onChange: (k: K) => void }) {
+/**
+ * Umschalter wie in der Web-App (z. B. "Monat | Geburtstage").
+ * fill: volle Breite mit gleich breiten Feldern (wie iOS), für viele Einträge.
+ */
+export function Segmented<K extends string>({ value, options, onChange, fill }: { value: K; options: { key: K; label: string }[]; onChange: (k: K) => void; fill?: boolean }) {
   const t = useTheme();
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: t.surface2, borderRadius: 999, padding: 3, gap: 2, alignSelf: 'flex-start' }} accessibilityRole="tablist">
+    <View style={{ flexDirection: 'row', backgroundColor: t.surface2, borderRadius: 999, padding: 3, gap: 2, alignSelf: fill ? 'stretch' : 'flex-start' }} accessibilityRole="tablist">
       {options.map((o) => {
         const on = o.key === value;
         return (
@@ -220,10 +223,11 @@ export function Segmented<K extends string>({ value, options, onChange }: { valu
             accessibilityState={{ selected: on }}
             testID={`seg-${o.key}`}
             style={[
-              { paddingVertical: 7, paddingHorizontal: 15, borderRadius: 999 },
+              { paddingVertical: 7, paddingHorizontal: fill ? 2 : 15, borderRadius: 999 },
+              fill && { flex: 1, alignItems: 'center' },
               on && { backgroundColor: t.surface, shadowColor: t.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
             ]}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: on ? t.ink : t.muted }}>{o.label}</Text>
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: fill ? 13 : 14, color: on ? t.ink : t.muted }} numberOfLines={1} adjustsFontSizeToFit={fill} minimumFontScale={0.8}>{o.label}</Text>
           </Press>
         );
       })}

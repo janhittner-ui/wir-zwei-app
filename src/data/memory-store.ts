@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkDateIdea, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -34,6 +34,7 @@ type MediaRow = Media & { coupleId: string };
 type GiftRow = Gift & { coupleId: string };
 type QuizRow = QuizAnswer & { coupleId: string };
 type MilestoneRow = Milestone & { coupleId: string };
+type DateRow = DateIdea & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -54,6 +55,7 @@ export class MemoryBackend {
   gifts = new Map<string, GiftRow>();
   quiz = new Map<string, QuizRow>();
   milestones = new Map<string, MilestoneRow>();
+  dates = new Map<string, DateRow>();
   periods = new Map<string, CyclePeriod>();
   cycleShare = new Map<string, boolean>(); // userId -> teilt mit Partner
   prefs = new Map<string, Record<string, unknown>>(); // userId -> Einstellungen
@@ -217,6 +219,7 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.tripItems) if (v.coupleId === cid) this.db.tripItems.delete(k);
       for (const [k, v] of this.db.media) if (v.coupleId === cid) this.db.media.delete(k);
       for (const [k, v] of this.db.gifts) if (v.coupleId === cid) this.db.gifts.delete(k);
+      for (const [k, v] of this.db.dates) if (v.coupleId === cid) this.db.dates.delete(k);
       for (const [k, v] of this.db.photos) if (v.coupleId === cid) {
         this.db.photos.delete(k);
         this.db.files.delete(v.path);
@@ -243,6 +246,7 @@ export class MemoryStore implements DataStore {
     for (const r of this.db.photos.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.media.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.milestones.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.dates.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.quiz.values()) {
       if (r.createdBy === me) r.createdBy = null;
       if (r.player === me) r.player = null;
@@ -499,8 +503,10 @@ export class MemoryStore implements DataStore {
     this.db.photos.delete(id);
     this.db.files.delete(r.path);
     for (const m of this.db.milestones.values()) if (m.photoId === id) m.photoId = null;
+    for (const d of this.db.dates.values()) if (d.photoId === id) d.photoId = null;
     this.db.emit('photos', r.coupleId);
     this.db.emit('milestones', r.coupleId);
+    this.db.emit('dates', r.coupleId);
   }
   async photoUrls(photos: Photo[]) {
     const cid = this.coupleId();
@@ -638,6 +644,44 @@ export class MemoryStore implements DataStore {
   async setCycleSharing(share: boolean) {
     this.db.cycleShare.set(this.uid(), !!share);
     this.emitCycle();
+  }
+
+  // ---------- Date-Liste ----------
+  private ownDate(id: string) {
+    const r = this.db.dates.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  private checkDatePhoto(cid: string, v: DateIdeaInput) {
+    if (v.photoId && this.db.photos.get(v.photoId)?.coupleId !== cid) fail('date_photo_invalid');
+  }
+  async listDateIdeas() {
+    const cid = this.coupleId();
+    return [...this.db.dates.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addDateIdea(d: DateIdeaInput) {
+    const cid = this.coupleId();
+    const v = checkDateIdea(d);
+    this.checkDatePhoto(cid, v);
+    const row: DateRow = { ...v, id: uuid(), coupleId: cid, createdBy: this.uid(), createdAt: this.stamp() };
+    this.db.dates.set(row.id, row);
+    this.db.emit('dates', cid);
+    const { coupleId, ...r } = row;
+    return { ...r };
+  }
+  async updateDateIdea(id: string, d: DateIdeaInput) {
+    const r = this.ownDate(id);
+    if (!r) return;
+    const v = checkDateIdea(d);
+    if (v.photoId !== r.photoId) this.checkDatePhoto(r.coupleId, v);
+    Object.assign(r, v);
+    this.db.emit('dates', r.coupleId);
+  }
+  async deleteDateIdea(id: string) {
+    const r = this.ownDate(id);
+    if (!r) return;
+    this.db.dates.delete(id);
+    this.db.emit('dates', r.coupleId);
   }
 
   // ---------- Meilensteine ----------

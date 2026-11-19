@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'cycle' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'dates' | 'cycle' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -106,6 +106,12 @@ export interface DataStore {
   /** Eigener Schalter „mit dem Partner teilen“ (Standard: aus) */
   getCycleSharing(): Promise<boolean>;
   setCycleSharing(share: boolean): Promise<void>;
+
+  // Date-Liste (erledigt = mit Datum; Foto nur wenn erledigt)
+  listDateIdeas(): Promise<DateIdea[]>;
+  addDateIdea(d: DateIdeaInput): Promise<DateIdea>;
+  updateDateIdea(id: string, d: DateIdeaInput): Promise<void>;
+  deleteDateIdea(id: string): Promise<void>;
 
   // Meilensteine (Zeitleiste, älteste zuerst)
   listMilestones(): Promise<Milestone[]>;

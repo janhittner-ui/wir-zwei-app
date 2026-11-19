@@ -13,13 +13,14 @@ import { AllDaySwitch, DatePicker, FormRow, TimePicker } from '@/ui/date-field';
 import { Banner, Button, Card, Input, Press, Screen, T } from '@/ui/kit';
 
 export default function Termin() {
-  const { id, date } = useLocalSearchParams<{ id?: string; date?: string }>();
+  const { id, date, title: titleParam } = useLocalSearchParams<{ id?: string; date?: string; title?: string }>();
   const { store, couple, profile } = useApp();
   const { items, loaded } = useEvents();
   const t = useTheme();
   const existing = id ? items.find((e) => e.id === id) : undefined;
 
-  const [title, setTitle] = useState('');
+  // title: Vorschlag, z. B. aus der Date-Liste
+  const [title, setTitle] = useState(titleParam?.slice(0, 120) ?? '');
   const [day, setDay] = useState(date ?? ymd(new Date()));
   const [time, setTime] = useState<string | null>(null);
   const [note, setNote] = useState('');
