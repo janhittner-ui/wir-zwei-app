@@ -6,6 +6,7 @@ import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, View } from
 import { friendlyError } from '@/data/errors';
 import { useApp, useGifts } from '@/data/provider';
 import type { GiftKind } from '@/data/types';
+import { goArea } from '@/lib/nav';
 import { fonts, personColors, useTheme } from '@/theme';
 import { IconX } from '@/ui/icons';
 import { Banner, Button, Input, Press, Screen, T } from '@/ui/kit';
@@ -49,7 +50,7 @@ export default function Geschenk() {
   // Namen, für die es schon Ideen gibt, als Schnellauswahl
   const names = useMemo(() => [...new Set(items.filter((g) => g.forName).map((g) => g.forName!))].sort((a, b) => a.localeCompare(b, 'de')), [items]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace({ pathname: '/listen', params: { seg: 'geschenke' } }));
+  const close = () => (router.canGoBack() ? router.back() : goArea('listen', { seg: 'geschenke' }, 'replace'));
 
   const save = async () => {
     setBusy(true);

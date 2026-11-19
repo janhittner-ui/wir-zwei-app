@@ -234,3 +234,11 @@ export function normalizeInviteCode(raw: string): string {
   if (!/^[A-HJ-NP-Z2-9]{8}$/.test(c)) throw new InputError('Der Einladungscode hat 8 Zeichen, z. B. K7MB-Q2XD.');
   return c;
 }
+
+/** Persönliche Einstellungen: ein JSON-Objekt, höchstens 8 KB (wie in der Datenbank) */
+export function checkPrefs(p: unknown): Record<string, unknown> {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) throw new Error('prefs_invalid');
+  const json = JSON.stringify(p);
+  if (new TextEncoder().encode(json).length > 8192) throw new Error('prefs_invalid');
+  return JSON.parse(json);
+}

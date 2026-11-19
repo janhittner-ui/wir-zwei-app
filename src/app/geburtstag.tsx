@@ -6,6 +6,7 @@ import { Alert, KeyboardAvoidingView, Platform, Text, View } from 'react-native'
 import { friendlyError } from '@/data/errors';
 import { useApp, useBirthdays } from '@/data/provider';
 import { MSHORT } from '@/lib/dates';
+import { goArea } from '@/lib/nav';
 import { fonts, useTheme } from '@/theme';
 import { IconX } from '@/ui/icons';
 import { Banner, Button, Input, Press, Screen, T } from '@/ui/kit';
@@ -37,7 +38,7 @@ export default function Geburtstag() {
     }
   }, [existing, filled]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/kalender'));
+  const close = () => (router.canGoBack() ? router.back() : goArea('kalender', {}, 'replace'));
 
   const save = async () => {
     setBusy(true);

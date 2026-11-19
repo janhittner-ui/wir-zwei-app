@@ -41,3 +41,8 @@ export const IconStar = ({ color, size = 22, filled }: P & { filled?: boolean })
     <Path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" />
   </Svg>
 );
+export const IconUp = (p: P) => <S width={2.2} {...p}><Path d="m5 15 7-7 7 7" /></S>;
+export const IconDown = (p: P) => <S width={2.2} {...p}><Path d="m5 9 7 7 7-7" /></S>;
+export const IconList = (p: P) => <S {...p}><Path d="M9 6h11M9 12h11M9 18h11" /><Path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2" /></S>;
+export const IconFork = (p: P) => <S {...p}><Path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 21V3c-2.5 1.5-3.5 4-3.5 7.5V13H17" /></S>;
+export const IconSliders = (p: P) => <S {...p}><Path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><Circle cx={16} cy={7} r={2} /><Circle cx={8} cy={17} r={2} /></S>;

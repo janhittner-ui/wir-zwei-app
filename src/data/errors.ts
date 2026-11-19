@@ -4,6 +4,7 @@ import { InputError } from './validate';
 const KNOWN: Record<string, string> = {
   gift_for_invalid: 'Ideen kannst du nur für deinen Schatz oder für andere Menschen anlegen.',
   gift_wish_invalid: 'Diesen Wunsch gibt es nicht mehr.',
+  prefs_invalid: 'Die Einstellungen konnten nicht gespeichert werden.',
   trip_mismatch: 'Diese Reise gibt es nicht mehr.',
   trips_dates: 'Die Reisedaten passen nicht zusammen.',
   invalid_code: 'Dieser Einladungscode stimmt nicht oder ist abgelaufen.',

@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { usePrefs } from '@/data/prefs';
 import { useApp, useBirthdays, useEvents } from '@/data/provider';
 import type { Birthday } from '@/data/types';
 import { birthdayIn, searchKey, upcomingBirthdays } from '@/lib/birthdays';
@@ -41,11 +42,16 @@ export default function Kalender() {
   );
 }
 
+const NO_BIRTHDAYS: Birthday[] = [];
+
 function MonthView() {
   const t = useTheme();
   const { couple } = useApp();
   const { items, error } = useEvents();
-  const { items: birthdays } = useBirthdays();
+  const { items: allBirthdays } = useBirthdays();
+  const { prefs } = usePrefs();
+  const showBd = prefs.kalender.showBirthdays;
+  const birthdays = showBd ? allBirthdays : NO_BIRTHDAYS;
   const now = new Date();
   const [month, setMonth] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [sel, setSel] = useState(ymd(now));
@@ -129,7 +135,7 @@ function MonthView() {
           {members.map((m) => (
             <Legend key={m.id} color={personColors(t, m.color).dot} label={m.displayName} />
           ))}
-          <Legend color={t.yellow} label="Geburtstag" />
+          {showBd ? <Legend color={t.yellow} label="Geburtstag" /> : null}
         </View>
       </Card>
 

@@ -1,5 +1,5 @@
 /** Bausteine im Wir-Zwei-Look: ruhige Karten auf kühlem Grund, weicher Farbschleier in euren Farben. */
-import { forwardRef, type ReactNode } from 'react';
+import { createContext, forwardRef, useContext, type ReactNode } from 'react';
 import {
   ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
   type PressableProps, type TextInputInstance, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle,
@@ -35,18 +35,23 @@ export function Aurora() {
   );
 }
 
+/** Etwas, das oben in jedem Screen darunter erscheinen soll (z. B. „Zurück“, wenn ein Bereich kein Tab ist). */
+export const ScreenTop = createContext<ReactNode>(null);
+
 export function Screen({ children, scroll = true, padTop = true }: { children: ReactNode; scroll?: boolean; padTop?: boolean }) {
   const insets = useSafeAreaInsets();
+  const top = useContext(ScreenTop);
   const pad = { paddingTop: padTop ? insets.top + 14 : 14, paddingBottom: 32, paddingHorizontal: 16, gap: 18 };
   return (
     <View style={{ flex: 1 }}>
       <Aurora />
       {scroll ? (
         <ScrollView contentContainerStyle={[pad, { maxWidth: 760, width: '100%', alignSelf: 'center' }]} keyboardShouldPersistTaps="handled">
+          {top}
           {children}
         </ScrollView>
       ) : (
-        <View style={[pad, { flex: 1 }]}>{children}</View>
+        <View style={[pad, { flex: 1 }]}>{top}{children}</View>
       )}
     </View>
   );

@@ -35,6 +35,10 @@ export interface DataStore {
   updateCouple(p: { togetherSince: string | null; names: string | null }): Promise<void>;
   deleteAccount(): Promise<void>;
 
+  /** Persönliche Einstellungen („Anpassen“), nur für einen selbst; null = noch nie gespeichert */
+  getMyPrefs(): Promise<unknown | null>;
+  saveMyPrefs(prefs: object): Promise<void>;
+
   // Kalender
   listEvents(): Promise<CalendarEvent[]>;
   addEvent(e: EventInput): Promise<CalendarEvent>;

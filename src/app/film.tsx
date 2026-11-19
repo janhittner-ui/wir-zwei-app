@@ -6,6 +6,7 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, View } from 
 import { friendlyError } from '@/data/errors';
 import { useApp, useMedia } from '@/data/provider';
 import type { MediaKind } from '@/data/types';
+import { goArea } from '@/lib/nav';
 import { fonts, useTheme } from '@/theme';
 import { FormRow } from '@/ui/date-field';
 import { IconX } from '@/ui/icons';
@@ -43,7 +44,7 @@ export default function Film() {
     }
   }, [existing, filled]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace({ pathname: '/listen', params: { seg: 'filme' } }));
+  const close = () => (router.canGoBack() ? router.back() : goArea('listen', { seg: 'filme' }, 'replace'));
 
   const save = async () => {
     setBusy(true);

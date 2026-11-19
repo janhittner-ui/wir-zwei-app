@@ -16,6 +16,7 @@ import { VERSES } from '../src/lib/verses';
 import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } from '../src/lib/trips';
 import type { Trip } from '../src/data/types';
 import { base64ToBytes } from '../src/lib/base64';
+import { DEFAULT_PREFS, move, normalizePrefs, toggleHidden, visible } from '../src/lib/prefs';
 import { amountText, formatAmount, formatMinutes, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
 
 async function login(store: MemoryStore, email: string) {
@@ -408,5 +409,69 @@ describe('Helfer', () => {
     assert.deepEqual([...base64ToBytes('data:image/jpeg;base64,/9j/4A==')], [0xff, 0xd8, 0xff, 0xe0]);
     const raw = Buffer.from(Array.from({ length: 1000 }, (_, i) => (i * 37) % 256));
     assert.deepEqual(Buffer.from(base64ToBytes(raw.toString('base64'))), raw);
+  });
+});
+
+describe('Anpassen (persönliche Einstellungen)', () => {
+  test('normalizePrefs macht aus allem gültige Einstellungen', () => {
+    assert.deepEqual(normalizePrefs(null), DEFAULT_PREFS);
+    assert.deepEqual(normalizePrefs('kaputt'), DEFAULT_PREFS);
+    const p = normalizePrefs({
+      areas: { order: ['album', 'album', 'quatsch', 'listen'], hidden: ['rezepte', 'start'] },
+      home: { order: ['shopping'], hidden: ['verse'], heroPhotoId: 'nicht-uuid' },
+      look: { mode: 'dark', accent: 'neon' },
+      lists: { hidden: ['einkauf', 'notizen', 'filme', 'geschenke'] },
+      kalender: { showBirthdays: 'ja' },
+      rezepte: { sort: 'neu' },
+      album: { cols: 7 },
+      fremd: { x: 1 },
+    });
+    // Reihenfolge bleibt, fehlende hinten dran, Doppeltes und Unbekanntes fliegt raus
+    assert.deepEqual(p.areas.order, ['album', 'listen', 'kalender', 'rezepte']);
+    assert.deepEqual(p.areas.hidden, ['rezepte']);
+    assert.deepEqual(visible(p.areas), ['album', 'listen', 'kalender']);
+    assert.equal(p.home.order[0], 'shopping');
+    assert.equal(p.home.order.length, 6);
+    assert.equal(p.home.heroPhotoId, null);
+    assert.deepEqual(p.look, { mode: 'dark', accent: 'blau' });
+    // Listen: mindestens ein Reiter bleibt sichtbar
+    assert.deepEqual(p.lists.hidden, []);
+    assert.equal(p.kalender.showBirthdays, true);
+    assert.equal(p.rezepte.sort, 'neu');
+    assert.equal(p.album.cols, 3);
+    assert.ok(!('fremd' in p));
+    const id = '0f8c2f0a-1b2c-4d3e-8f90-123456789abc';
+    assert.equal(normalizePrefs({ home: { heroPhotoId: id } }).home.heroPhotoId, id);
+  });
+
+  test('Verschieben und Ausblenden', () => {
+    const o = DEFAULT_PREFS.lists;
+    assert.deepEqual(move(o, 'filme', -1).order, ['einkauf', 'filme', 'notizen', 'geschenke']);
+    assert.equal(move(o, 'einkauf', -1), o);
+    assert.equal(move(o, 'geschenke', 1), o);
+    let h = toggleHidden(o, 'einkauf', 1);
+    h = toggleHidden(h, 'notizen', 1);
+    h = toggleHidden(h, 'filme', 1);
+    assert.deepEqual(visible(h), ['geschenke']);
+    // der letzte sichtbare bleibt
+    assert.equal(toggleHidden(h, 'geschenke', 1), h);
+    assert.deepEqual(visible(toggleHidden(h, 'filme', 1)), ['filme', 'geschenke']);
+  });
+
+  test('Mock-DB: jede Person hat eigene Einstellungen, Größe begrenzt, Konto löschen räumt auf', async () => {
+    const db = new MemoryBackend();
+    const a = new MemoryStore(db);
+    const b = new MemoryStore(db);
+    await login(a, 'a@example.org');
+    await login(b, 'b@example.org');
+    assert.equal(await a.getMyPrefs(), null);
+    await a.saveMyPrefs({ ...DEFAULT_PREFS, look: { mode: 'dark', accent: 'lila' } });
+    assert.equal(await b.getMyPrefs(), null);
+    const got = normalizePrefs(await a.getMyPrefs());
+    assert.equal(got.look.accent, 'lila');
+    await assert.rejects(() => a.saveMyPrefs({ x: 'a'.repeat(9000) }), /prefs_invalid/);
+    await assert.rejects(() => a.saveMyPrefs([] as unknown as object), /prefs_invalid/);
+    await a.deleteAccount();
+    assert.equal(db.prefs.size, 0);
   });
 });

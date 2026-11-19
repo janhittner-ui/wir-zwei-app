@@ -6,6 +6,7 @@ import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
 import { friendlyError } from '@/data/errors';
 import { useApp, useEvents } from '@/data/provider';
 import { ymd } from '@/lib/dates';
+import { goArea } from '@/lib/nav';
 import { fonts, personColors, useTheme } from '@/theme';
 import { IconX } from '@/ui/icons';
 import { AllDaySwitch, DatePicker, FormRow, TimePicker } from '@/ui/date-field';
@@ -38,7 +39,7 @@ export default function Termin() {
     }
   }, [existing, filled]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/kalender'));
+  const close = () => (router.canGoBack() ? router.back() : goArea('kalender', {}, 'replace'));
 
   const save = async () => {
     setBusy(true);

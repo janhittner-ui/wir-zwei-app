@@ -6,6 +6,7 @@ import { Alert, KeyboardAvoidingView, Platform, Switch, View } from 'react-nativ
 import { friendlyError } from '@/data/errors';
 import { useApp, useTrips } from '@/data/provider';
 import { parse, ymd } from '@/lib/dates';
+import { goArea } from '@/lib/nav';
 import { useTheme } from '@/theme';
 import { DatePicker, FormRow } from '@/ui/date-field';
 import { IconX } from '@/ui/icons';
@@ -46,7 +47,7 @@ export default function ReiseBearbeiten() {
     }
   }, [existing, filled]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace({ pathname: '/kalender', params: { seg: 'reisen' } }));
+  const close = () => (router.canGoBack() ? router.back() : goArea('kalender', { seg: 'reisen' }, 'replace'));
 
   // Abreise verschoben: Rückreise wandert mit, damit die Dauer gleich bleibt
   const changeStart = (iso: string) => {
@@ -81,7 +82,7 @@ export default function ReiseBearbeiten() {
         onPress: async () => {
           try {
             await store.deleteTrip(existing.id);
-            router.dismissTo({ pathname: '/kalender', params: { seg: 'reisen' } });
+            goArea('kalender', { seg: 'reisen' }, 'dismissTo');
           } catch (e) {
             setErr(friendlyError(e));
           }

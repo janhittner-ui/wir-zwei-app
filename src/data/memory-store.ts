@@ -8,7 +8,7 @@ import type {
   Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -50,6 +50,7 @@ export class MemoryBackend {
   photos = new Map<string, PhotoRow>();
   media = new Map<string, MediaRow>();
   gifts = new Map<string, GiftRow>();
+  prefs = new Map<string, Record<string, unknown>>(); // userId -> Einstellungen
   /** Bilddateien (Pfad → data:-URL), wie der private Speicher */
   files = new Map<string, string>();
   /** Nur für Tests: feste Uhrzeit */
@@ -145,6 +146,13 @@ export class MemoryStore implements DataStore {
     if (c) this.db.emit('couple', c);
     return { ...prof };
   }
+  async getMyPrefs() {
+    const p = this.db.prefs.get(this.uid());
+    return p ? structuredClone(p) : null;
+  }
+  async saveMyPrefs(prefs: object) {
+    this.db.prefs.set(this.uid(), checkPrefs(prefs));
+  }
   async getMyCouple(): Promise<Couple | null> {
     const cid = this.db.members.get(this.uid());
     if (!cid) return null;
@@ -236,6 +244,7 @@ export class MemoryStore implements DataStore {
       if (n.createdBy === me) n.createdBy = null;
       if (n.updatedBy === me) n.updatedBy = null;
     }
+    this.db.prefs.delete(me);
     this.db.profiles.delete(me);
     this.db.users.delete(me);
     this.db.passwords.delete(me);

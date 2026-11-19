@@ -10,7 +10,7 @@ import type { PersonColor } from '@/data/types';
 import { ymd } from '@/lib/dates';
 import { fonts, personColors, useTheme } from '@/theme';
 import { DatePicker, FormRow } from '@/ui/date-field';
-import { IconX } from '@/ui/icons';
+import { IconRight, IconSliders, IconX } from '@/ui/icons';
 import { Banner, Button, Card, Divider, Input, Press, Screen, T } from '@/ui/kit';
 
 export default function Einstellungen() {
@@ -133,6 +133,19 @@ export default function Einstellungen() {
           <Button kind="ghost" title="Profil speichern" busy={busy === 'profile'} onPress={saveProfile} />
           {session?.email ? <T v="small">Angemeldet mit {session.email}</T> : null}
         </Card>
+
+        <Press onPress={() => router.push('/anpassen')} scale={0.98} accessibilityRole="button" testID="settings-anpassen">
+          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: t.blueSoft, alignItems: 'center', justifyContent: 'center' }}>
+              <IconSliders color={t.blue} size={19} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <T style={{ fontFamily: fonts.bodySemi, fontSize: 16 }}>Anpassen</T>
+              <T v="small">Farbe, Tabs, Startseite und Bereiche, nur für dich</T>
+            </View>
+            <IconRight color={t.lineStrong} size={16} />
+          </Card>
+        </Press>
 
         <Card>
           <T v="h2">Datenschutz</T>

@@ -7,6 +7,7 @@ import { friendlyError } from '@/data/errors';
 import { useApp, useNotes } from '@/data/provider';
 import type { NoteColor } from '@/data/types';
 import { fullDate } from '@/lib/dates';
+import { goArea } from '@/lib/nav';
 import { useTheme } from '@/theme';
 import { IconCheck, IconX } from '@/ui/icons';
 import { Banner, Button, Input, Press, Screen, T } from '@/ui/kit';
@@ -41,7 +42,7 @@ export default function Notiz() {
     }
   }, [existing, filled]);
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace({ pathname: '/listen', params: { seg: 'notizen' } }));
+  const close = () => (router.canGoBack() ? router.back() : goArea('listen', { seg: 'notizen' }, 'replace'));
 
   const save = async () => {
     setBusy(true);
