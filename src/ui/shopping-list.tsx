@@ -1,4 +1,4 @@
-/** Einkaufsliste: schnell eintragen, abhaken, Erledigtes aufräumen. Änderungen erscheinen sofort beim Partner. */
+/** Einkaufsliste (Reiter im Tab „Listen“): schnell eintragen, abhaken, Erledigtes aufräumen. Änderungen erscheinen sofort beim Partner. */
 import { useMemo, useRef, useState } from 'react';
 import { Alert, Text, View, type TextInputInstance } from 'react-native';
 
@@ -9,10 +9,10 @@ import { splitQty } from '@/lib/qty';
 import { shopEmoji } from '@/lib/shop-emoji';
 import { fonts, personColors, useTheme } from '@/theme';
 import { IconCheck, IconPlus } from '@/ui/icons';
-import { Banner, Button, Card, CardHead, Input, Press, Screen, T } from '@/ui/kit';
+import { Banner, Button, Card, CardHead, Input, Press, T } from '@/ui/kit';
 import { SwipeToDelete } from '@/ui/swipe-row';
 
-export default function Einkauf() {
+export function ShoppingList() {
   const t = useTheme();
   const { store, couple } = useApp();
   const { items, setItems, error, reload } = useShopping();
@@ -64,11 +64,7 @@ export default function Einkauf() {
   });
 
   return (
-    <Screen>
-      <View>
-        <T v="eyebrow">Was fehlt?</T>
-        <T v="display">Einkauf</T>
-      </View>
+    <>
       {error ? <Banner warn>Die Liste konnte gerade nicht geladen werden.</Banner> : null}
 
       <Card>
@@ -91,7 +87,7 @@ export default function Einkauf() {
           {done.map((it, i) => { const { key, ...p } = rowProps(it, i); return <ShopRow key={key} {...p} />; })}
         </Card>
       ) : null}
-    </Screen>
+    </>
   );
 }
 

@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, NoteInput, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -138,6 +138,21 @@ export function checkTripItem(text: string): string {
   if (!v) throw new InputError('Was soll mit?');
   if (v.length > 120) throw new InputError('Höchstens 120 Zeichen bitte.');
   return v;
+}
+
+export function checkCaption(c: string | null | undefined): string | null {
+  const v = clean(c) || null;
+  if (v && v.length > 200) throw new InputError('Die Bildunterschrift darf höchstens 200 Zeichen haben.');
+  return v;
+}
+
+export function checkPhoto(p: PhotoUpload): PhotoUpload {
+  const ok = (n: number) => Number.isInteger(n) && n >= 1 && n <= 10000;
+  if (!ok(p.width) || !ok(p.height)) throw new InputError('Dieses Bild konnte nicht gelesen werden.');
+  if (!p.base64 || p.base64.length < 100) throw new InputError('Dieses Bild konnte nicht gelesen werden.');
+  // ca. 5 MB Datei (Base64 ist ein Drittel größer) – die App verkleinert vorher deutlich
+  if (p.base64.length > 6_900_000) throw new InputError('Das Bild ist zu groß.');
+  return { ...p, caption: checkCaption(p.caption) };
 }
 
 export function checkShopping(i: ShoppingInput): ShoppingInput {

@@ -38,6 +38,14 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 140
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Damit du Bilder in euer gemeinsames Album legen kannst, braucht die App Zugriff auf deine Fotos.",
+          "cameraPermission": "Damit du Fotos direkt für euer gemeinsames Album aufnehmen kannst, braucht die App die Kamera.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

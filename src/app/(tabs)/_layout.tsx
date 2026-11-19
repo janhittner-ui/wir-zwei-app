@@ -18,14 +18,17 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Kalender</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="calendar" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="einkauf">
-        <NativeTabs.Trigger.Label>Einkauf</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'cart', selected: 'cart.fill' }} />
+      <NativeTabs.Trigger name="listen">
+        <NativeTabs.Trigger.Label>Listen</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'checklist', selected: 'checklist' }} />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="rezepte"><NativeTabs.Trigger.Label>Rezepte</NativeTabs.Trigger.Label><NativeTabs.Trigger.Icon sf="fork.knife" /></NativeTabs.Trigger>
-      <NativeTabs.Trigger name="notizen">
-        <NativeTabs.Trigger.Label>Notizen</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'note.text', selected: 'note.text' }} />
+      <NativeTabs.Trigger name="rezepte">
+        <NativeTabs.Trigger.Label>Rezepte</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="fork.knife" />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="album">
+        <NativeTabs.Trigger.Label>Album</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'photo.on.rectangle', selected: 'photo.fill.on.rectangle.fill' }} />
       </NativeTabs.Trigger>
     </NativeTabs>
   );

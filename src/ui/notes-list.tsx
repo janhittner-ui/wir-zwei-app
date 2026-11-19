@@ -1,4 +1,4 @@
-/** Notizen: farbige Zettel, die beide sehen und bearbeiten können. Neueste zuerst. */
+/** Notizen (Reiter im Tab „Listen“): farbige Zettel, die beide sehen und bearbeiten können. Neueste zuerst. */
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
@@ -8,9 +8,9 @@ import { searchKey } from '@/lib/birthdays';
 import { MSHORT } from '@/lib/dates';
 import { fonts, personColors, useTheme } from '@/theme';
 import { IconPlus, IconX } from '@/ui/icons';
-import { Banner, Button, Input, Press, Screen, T } from '@/ui/kit';
+import { Banner, Button, Input, Press, T } from '@/ui/kit';
 
-export default function Notizen() {
+export function NotesList() {
   const t = useTheme();
   const { couple } = useApp();
   const { items, loaded, error } = useNotes();
@@ -21,12 +21,9 @@ export default function Notizen() {
   const add = () => router.push('/notiz');
 
   return (
-    <Screen>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <View>
-          <T v="eyebrow">{notes.length === 1 ? '1 Notiz' : `${notes.length} Notizen`}</T>
-          <T v="display">Notizen</T>
-        </View>
+    <>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <T v="label">{notes.length === 1 ? '1 Notiz' : `${notes.length} Notizen`}</T>
         <Button small title="Notiz" icon={<IconPlus color={t.onAccent} size={18} />} onPress={add} testID="add-note" />
       </View>
       {error ? <Banner warn>Notizen konnten gerade nicht geladen werden.</Banner> : null}
@@ -79,6 +76,6 @@ export default function Notizen() {
           <Button small title="Erste Notiz" onPress={add} />
         </View>
       ) : null}
-    </Screen>
+    </>
   );
 }

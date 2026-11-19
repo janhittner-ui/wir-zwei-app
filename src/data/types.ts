@@ -107,6 +107,25 @@ export interface TripItem {
   createdAt: string;
 }
 
+/** Foto im gemeinsamen Album. Die Bilddatei liegt im privaten Speicher unter "path". */
+export interface Photo {
+  id: string;
+  path: string;
+  caption: string | null;
+  width: number;
+  height: number;
+  createdBy: string | null;
+  /** ISO-Zeitpunkt */
+  createdAt: string;
+}
+/** Fertig verkleinertes JPEG zum Hochladen */
+export interface PhotoUpload {
+  base64: string;
+  width: number;
+  height: number;
+  caption?: string | null;
+}
+
 export type EventInput = Omit<CalendarEvent, 'id' | 'createdBy'>;
 export type ShoppingInput = Pick<ShoppingItem, 'text' | 'qty'>;
 

@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -70,6 +70,14 @@ export interface DataStore {
   addTripItem(tripId: string, text: string): Promise<TripItem>;
   setTripItemDone(id: string, done: boolean): Promise<void>;
   deleteTripItem(id: string): Promise<void>;
+
+  // Fotoalbum (neueste zuerst)
+  listPhotos(): Promise<Photo[]>;
+  addPhoto(p: PhotoUpload): Promise<Photo>;
+  updatePhotoCaption(id: string, caption: string | null): Promise<void>;
+  deletePhoto(id: string): Promise<void>;
+  /** Zeitlich begrenzte Links zum Anzeigen (privater Speicher), je Foto-ID */
+  photoUrls(photos: Photo[]): Promise<Record<string, string>>;
 
   // Einkauf
   listShopping(): Promise<ShoppingItem[]>;

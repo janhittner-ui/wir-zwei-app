@@ -8,12 +8,13 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 
 import { secureStorage } from './secure-storage';
+import { base64ToBytes } from '../lib/base64';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -58,6 +59,10 @@ const toTripItem = (r: Row): TripItem => ({
 });
 const TRIP_ITEM_COLS = 'id, trip_id, text, done, created_by, created_at';
 const tripRow = (v: TripInput) => ({ title: v.title, start_date: v.startDate, end_date: v.endDate, note: v.note });
+const toPhoto = (r: Row): Photo => ({
+  id: r.id, path: r.path, caption: r.caption, width: r.width, height: r.height, createdBy: r.created_by, createdAt: r.created_at,
+});
+const PHOTO_COLS = 'id, path, caption, width, height, created_by, created_at';
 const NOTE_COLS = 'id, title, body, color, created_by, updated_by, updated_at';
 const BD_COLS = 'id, name, month, day, year, note, created_by';
 const eventRow = (e: EventInput) => ({ title: e.title, date: e.date, time: e.time, note: e.note, who: e.who });
@@ -66,6 +71,8 @@ export class SupabaseStore implements DataStore {
   readonly kind = 'supabase' as const;
   private sb: SupabaseClient;
   private coupleCache: string | null = null;
+  /** Signierte Links (1 Stunde gültig) zwischenspeichern, damit Bilder nicht ständig neu laden */
+  private urlCache = new Map<string, { url: string; until: number }>();
 
   constructor(url: string, anonKey: string) {
     this.sb = createClient(url, anonKey, {
@@ -171,7 +178,28 @@ export class SupabaseStore implements DataStore {
   async joinCouple(code: string) {
     this.coupleCache = must(await this.sb.rpc('join_couple', { invite_code: normalizeInviteCode(code) })) as string;
   }
+  /**
+   * Wer als Letzter das Paar verlässt oder sein Konto löscht, nimmt die Fotodateien mit.
+   * (Dateien im Speicher kann die Datenbank nicht selbst löschen, das geht nur über die Storage-API.)
+   */
+  private async purgePhotosIfLast() {
+    let cid: string;
+    try {
+      cid = await this.coupleId();
+    } catch {
+      return; // kein Paar, keine Fotos
+    }
+    const members = must(await this.sb.from('couple_members').select('user_id').eq('couple_id', cid)) as Row[];
+    if (members.length > 1) return;
+    const rows = must(await this.sb.from('photos').select('path').eq('couple_id', cid)) as Row[];
+    for (let i = 0; i < rows.length; i += 100) {
+      const { error } = await this.sb.storage.from('photos').remove(rows.slice(i, i + 100).map((r) => r.path as string));
+      if (error) throw error;
+    }
+  }
+
   async leaveCouple() {
+    await this.purgePhotosIfLast();
     must(await this.sb.rpc('leave_couple'));
     this.coupleCache = null;
   }
@@ -180,6 +208,7 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('couples').update({ together_since: v.togetherSince, names: v.names }).eq('id', await this.coupleId()));
   }
   async deleteAccount() {
+    await this.purgePhotosIfLast();
     must(await this.sb.rpc('delete_my_account'));
     this.coupleCache = null;
     // Lokale Anmeldung entfernen (das Konto existiert serverseitig nicht mehr)
@@ -314,9 +343,62 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('trip_items').delete().eq('id', id));
   }
 
+  // ---------- Fotoalbum ----------
+  async listPhotos() {
+    const r = must(await this.sb.from('photos').select(PHOTO_COLS).eq('couple_id', await this.coupleId())
+      .order('created_at', { ascending: false })) as Row[];
+    return r.map(toPhoto);
+  }
+  async addPhoto(p: PhotoUpload) {
+    const v = checkPhoto(p);
+    // Erst den Album-Eintrag anlegen (die Datenbank bestimmt den Dateipfad), dann die Datei hochladen.
+    const row = toPhoto(one(await this.sb.from('photos')
+      .insert({ caption: v.caption, width: v.width, height: v.height, couple_id: await this.coupleId() }).select(PHOTO_COLS).single()));
+    const { error } = await this.sb.storage.from('photos').upload(row.path, base64ToBytes(v.base64), { contentType: 'image/jpeg', upsert: false });
+    if (error) {
+      await this.sb.from('photos').delete().eq('id', row.id);
+      throw error;
+    }
+    return row;
+  }
+  async updatePhotoCaption(id: string, caption: string | null) {
+    must(await this.sb.from('photos').update({ caption: checkCaption(caption) }).eq('id', id));
+  }
+  async deletePhoto(id: string) {
+    const r = (must(await this.sb.from('photos').select('path').eq('id', id)) as Row[])[0];
+    if (!r) return;
+    const { error } = await this.sb.storage.from('photos').remove([r.path]);
+    if (error) throw error;
+    must(await this.sb.from('photos').delete().eq('id', id));
+    this.urlCache.delete(r.path);
+  }
+  async photoUrls(photos: Photo[]) {
+    const now = Date.now();
+    const out: Record<string, string> = {};
+    const missing: Photo[] = [];
+    for (const p of photos) {
+      const c = this.urlCache.get(p.path);
+      if (c && c.until > now) out[p.id] = c.url;
+      else missing.push(p);
+    }
+    for (let i = 0; i < missing.length; i += 100) {
+      const part = missing.slice(i, i + 100);
+      const { data, error } = await this.sb.storage.from('photos').createSignedUrls(part.map((p) => p.path), 3600);
+      if (error) throw error;
+      for (const d of data ?? []) {
+        const p = part.find((x) => x.path === d.path);
+        if (p && d.signedUrl) {
+          out[p.id] = d.signedUrl;
+          this.urlCache.set(p.path, { url: d.signedUrl, until: now + 50 * 60 * 1000 });
+        }
+      }
+    }
+    return out;
+  }
+
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

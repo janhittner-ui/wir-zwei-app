@@ -15,6 +15,7 @@ import { shopEmoji } from '../src/lib/shop-emoji';
 import { VERSES } from '../src/lib/verses';
 import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } from '../src/lib/trips';
 import type { Trip } from '../src/data/types';
+import { base64ToBytes } from '../src/lib/base64';
 import { amountText, formatAmount, formatMinutes, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
 
 async function login(store: MemoryStore, email: string) {
@@ -150,6 +151,27 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.equal((await jan.listTripItems())[0].done, true);
     await jan.deleteTrip(trip.id);
     assert.equal((await jan.listTripItems()).length, 0); // Packliste geht mit
+  });
+
+  test('Fotos: hochladen, Bildunterschrift, Links nur fürs eigene Paar, löschen', async () => {
+    const img = 'A'.repeat(400);
+    const p1 = await jan.addPhoto({ base64: img, width: 1600, height: 1200, caption: ' Strand ' });
+    assert.equal(p1.caption, 'Strand');
+    assert.match(p1.path, /^[0-9a-f-]+\/[0-9a-f-]+\.jpg$/);
+    const p2 = await vanessa.addPhoto({ base64: img, width: 900, height: 1600 });
+    assert.deepEqual((await jan.listPhotos()).map((x) => x.id), [p2.id, p1.id]); // neueste zuerst
+    await vanessa.updatePhotoCaption(p1.id, 'Am Strand');
+    assert.equal((await jan.listPhotos())[1].caption, 'Am Strand');
+    const urls = await jan.photoUrls(await jan.listPhotos());
+    assert.match(urls[p1.id], /^data:image\/jpeg;base64,/);
+    await assert.rejects(() => jan.addPhoto({ base64: img, width: 0, height: 10 }), /nicht gelesen/);
+    await assert.rejects(() => jan.updatePhotoCaption(p1.id, 'x'.repeat(201)), /200 Zeichen/);
+    assert.equal((await fremd.listPhotos()).length, 0);
+    assert.deepEqual(await fremd.photoUrls([p1]), {});
+    await fremd.deletePhoto(p1.id);
+    assert.equal((await jan.listPhotos()).length, 2);
+    await jan.deletePhoto(p2.id);
+    assert.deepEqual((await vanessa.listPhotos()).map((x) => x.id), [p1.id]);
   });
 
   test('Rezepte: anlegen, Favorit, geprüft, Fremde sehen nichts', async () => {
@@ -335,5 +357,12 @@ describe('Helfer', () => {
     assert.deepEqual(g.wishes.map((x) => x.title), ['Island', 'Rom']);
     assert.deepEqual(g.past.map((x) => x.title), ['Alt']);
     assert.equal(nextTrip([tr(null)], now), null);
+  });
+
+  test('Base64 → Bytes', () => {
+    assert.deepEqual([...base64ToBytes('SGFsbG8=')], [...Buffer.from('Hallo')]);
+    assert.deepEqual([...base64ToBytes('data:image/jpeg;base64,/9j/4A==')], [0xff, 0xd8, 0xff, 0xe0]);
+    const raw = Buffer.from(Array.from({ length: 1000 }, (_, i) => (i * 37) % 256));
+    assert.deepEqual(Buffer.from(base64ToBytes(raw.toString('base64'))), raw);
   });
 });

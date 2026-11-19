@@ -30,6 +30,17 @@ const SUPABASE_STUB = `
   alter default privileges in schema public grant all on tables to anon;
   alter default privileges in schema public grant execute on functions to anon;
   create publication supabase_realtime;
+  -- Speicher (Storage) wie bei Supabase: Buckets, Objekte mit RLS, foldername()
+  create schema storage;
+  create table storage.buckets (id text primary key, name text not null, public boolean default false, file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets (id), name text not null, owner uuid default auth.uid(), unique (bucket_id, name));
+  create function storage.foldername(name text) returns text[] language sql immutable as $$
+    select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1]
+  $$;
+  alter table storage.objects enable row level security;
+  grant usage on schema storage to anon, authenticated;
+  grant select, insert, update, delete on storage.objects to anon, authenticated;
+  grant execute on function storage.foldername(text) to anon, authenticated;
 `;
 
 const A = '00000000-0000-4000-8000-00000000000a';
@@ -195,6 +206,31 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal((await as(A, 'select * from public.trip_items')).length, 1);
   });
 
+  test('Fotos: Pfad automatisch, Speicher nur im eigenen Ordner, Fremde sehen nichts', async () => {
+    const [ph] = await as<{ id: string; path: string }>(A, `insert into public.photos (couple_id, caption, width, height) values ($1, 'Strand', 1600, 1200) returning id, path`, [couple]);
+    assert.equal(ph.path, `${couple}/${ph.id}.jpg`);
+    await fails(A, `insert into public.photos (couple_id, path, width, height) values ($1, 'x/y.jpg', 1, 1)`, /generated|cannot insert/, [couple]);
+    await fails(A, `insert into public.photos (couple_id, width, height) values ($1, 0, 10)`, /check constraint/, [couple]);
+    await as(B, `update public.photos set caption = 'Am Strand' where id = $1`, [ph.id]);
+    await fails(B, `update public.photos set width = 5 where id = $1`, /permission denied/, [ph.id]);
+    // Datei hochladen: nur mit passendem Album-Eintrag und nur im eigenen Ordner
+    await as(A, `insert into storage.objects (bucket_id, name) values ('photos', $1)`, [ph.path]);
+    await fails(A, `insert into storage.objects (bucket_id, name) values ('photos', $1)`, /row-level security/, [`${couple}/heimlich.jpg`]);
+    await fails(A, `insert into storage.objects (bucket_id, name) values ('photos', $1)`, /row-level security/, [`00000000-0000-4000-8000-000000000999/${ph.id}.jpg`]);
+    assert.equal((await as(B, `select * from storage.objects where bucket_id = 'photos'`)).length, 1);
+    assert.equal((await as(C, `select * from storage.objects`)).length, 0);
+    assert.equal((await as(C, 'select * from public.photos')).length, 0);
+    assert.equal((await as(C, `delete from storage.objects returning id`)).length, 0);
+    await fails(C, `insert into storage.objects (bucket_id, name) values ('photos', $1)`, /row-level security/, [ph.path]);
+    await fails(null, 'select * from public.photos', /permission denied/);
+    assert.equal((await as(null, `select * from storage.objects`)).length, 0);
+    // Löschen: Datei und Eintrag
+    assert.equal((await as(B, `delete from storage.objects where name = $1 returning id`, [ph.path])).length, 1);
+    await as(B, `delete from public.photos where id = $1`, [ph.id]);
+    const bucket = (await db.query<{ public: boolean }>(`select public from storage.buckets where id = 'photos'`)).rows[0];
+    assert.equal(bucket.public, false);
+  });
+
   test('Geburtstage: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
     await as(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'Oma Helga', 3, 14, 1941)`, [couple]);
     await as(B, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Schaltjahr-Kind', 2, 29)`, [couple]);
@@ -245,7 +281,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

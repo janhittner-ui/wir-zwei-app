@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -29,6 +29,7 @@ type NoteRow = Note & { coupleId: string };
 type RecipeRow = Recipe & { coupleId: string };
 type TripRow = Trip & { coupleId: string };
 type TripItemRow = TripItem & { coupleId: string };
+type PhotoRow = Photo & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -44,6 +45,9 @@ export class MemoryBackend {
   recipes = new Map<string, RecipeRow>();
   trips = new Map<string, TripRow>();
   tripItems = new Map<string, TripItemRow>();
+  photos = new Map<string, PhotoRow>();
+  /** Bilddateien (Pfad → data:-URL), wie der private Speicher */
+  files = new Map<string, string>();
   /** Nur für Tests: feste Uhrzeit */
   now = () => Date.now();
   /** Der Code, den die "E-Mail" enthalten würde */
@@ -193,6 +197,10 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.recipes) if (v.coupleId === cid) this.db.recipes.delete(k);
       for (const [k, v] of this.db.trips) if (v.coupleId === cid) this.db.trips.delete(k);
       for (const [k, v] of this.db.tripItems) if (v.coupleId === cid) this.db.tripItems.delete(k);
+      for (const [k, v] of this.db.photos) if (v.coupleId === cid) {
+        this.db.photos.delete(k);
+        this.db.files.delete(v.path);
+      }
       for (const [k, v] of this.db.invites) if (v.coupleId === cid) this.db.invites.delete(k);
     } else {
       this.db.emit('couple', cid);
@@ -212,6 +220,7 @@ export class MemoryStore implements DataStore {
     for (const r of this.db.recipes.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.trips.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.tripItems.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.photos.values()) if (r.createdBy === me) r.createdBy = null;
     for (const n of this.db.notes.values()) {
       if (n.createdBy === me) n.createdBy = null;
       if (n.updatedBy === me) n.updatedBy = null;
@@ -422,6 +431,50 @@ export class MemoryStore implements DataStore {
     if (!r) return;
     this.db.tripItems.delete(id);
     this.db.emit('trips', r.coupleId);
+  }
+
+  // ---------- Fotoalbum ----------
+  private ownPhoto(id: string) {
+    const r = this.db.photos.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  async listPhotos() {
+    const cid = this.coupleId();
+    return [...this.db.photos.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addPhoto(p: PhotoUpload) {
+    const cid = this.coupleId();
+    const v = checkPhoto(p);
+    const id = uuid();
+    const row: PhotoRow = { id, path: `${cid}/${id}.jpg`, caption: v.caption ?? null, width: v.width, height: v.height, coupleId: cid, createdBy: this.uid(), createdAt: this.stamp() };
+    this.db.photos.set(id, row);
+    this.db.files.set(row.path, v.base64.startsWith('data:') ? v.base64 : `data:image/jpeg;base64,${v.base64}`);
+    this.db.emit('photos', cid);
+    const { coupleId, ...r } = row;
+    return { ...r };
+  }
+  async updatePhotoCaption(id: string, caption: string | null) {
+    const r = this.ownPhoto(id);
+    if (!r) return;
+    r.caption = checkCaption(caption);
+    this.db.emit('photos', r.coupleId);
+  }
+  async deletePhoto(id: string) {
+    const r = this.ownPhoto(id);
+    if (!r) return;
+    this.db.photos.delete(id);
+    this.db.files.delete(r.path);
+    this.db.emit('photos', r.coupleId);
+  }
+  async photoUrls(photos: Photo[]) {
+    const cid = this.coupleId();
+    const out: Record<string, string> = {};
+    for (const p of photos) {
+      const f = this.db.files.get(p.path);
+      if (f && p.path.startsWith(`${cid}/`)) out[p.id] = f;
+    }
+    return out;
   }
 
   // ---------- Einkauf ----------
