@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -33,6 +33,7 @@ type PhotoRow = Photo & { coupleId: string };
 type MediaRow = Media & { coupleId: string };
 type GiftRow = Gift & { coupleId: string };
 type QuizRow = QuizAnswer & { coupleId: string };
+type MilestoneRow = Milestone & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -52,6 +53,7 @@ export class MemoryBackend {
   media = new Map<string, MediaRow>();
   gifts = new Map<string, GiftRow>();
   quiz = new Map<string, QuizRow>();
+  milestones = new Map<string, MilestoneRow>();
   prefs = new Map<string, Record<string, unknown>>(); // userId -> Einstellungen
   /** Bilddateien (Pfad → data:-URL), wie der private Speicher */
   files = new Map<string, string>();
@@ -238,6 +240,7 @@ export class MemoryStore implements DataStore {
     for (const r of this.db.tripItems.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.photos.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.media.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.milestones.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.quiz.values()) {
       if (r.createdBy === me) r.createdBy = null;
       if (r.player === me) r.player = null;
@@ -491,7 +494,9 @@ export class MemoryStore implements DataStore {
     if (!r) return;
     this.db.photos.delete(id);
     this.db.files.delete(r.path);
+    for (const m of this.db.milestones.values()) if (m.photoId === id) m.photoId = null;
     this.db.emit('photos', r.coupleId);
+    this.db.emit('milestones', r.coupleId);
   }
   async photoUrls(photos: Photo[]) {
     const cid = this.coupleId();
@@ -583,6 +588,44 @@ export class MemoryStore implements DataStore {
     if (v.forUser !== r.forUser) this.checkGiftTarget(r.coupleId, { ...v, wishId: null });
     Object.assign(r, { title: v.title, forUser: v.forUser, forName: v.forName, occasion: v.occasion, link: v.link, note: v.note });
     this.db.emit('gifts', r.coupleId);
+  }
+
+  // ---------- Meilensteine ----------
+  private checkMilestonePhoto(cid: string, v: MilestoneInput) {
+    if (v.photoId && this.db.photos.get(v.photoId)?.coupleId !== cid) fail('milestone_photo_invalid');
+  }
+  private ownMilestone(id: string) {
+    const r = this.db.milestones.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  async listMilestones() {
+    const cid = this.coupleId();
+    return [...this.db.milestones.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addMilestone(m: MilestoneInput) {
+    const cid = this.coupleId();
+    const v = checkMilestone(m);
+    this.checkMilestonePhoto(cid, v);
+    const row: MilestoneRow = { ...v, id: uuid(), coupleId: cid, createdBy: this.uid(), createdAt: this.stamp() };
+    this.db.milestones.set(row.id, row);
+    this.db.emit('milestones', cid);
+    const { coupleId, ...out } = row;
+    return out;
+  }
+  async updateMilestone(id: string, m: MilestoneInput) {
+    const r = this.ownMilestone(id);
+    if (!r) return;
+    const v = checkMilestone(m);
+    if (v.photoId !== r.photoId) this.checkMilestonePhoto(r.coupleId, v);
+    Object.assign(r, v);
+    this.db.emit('milestones', r.coupleId);
+  }
+  async deleteMilestone(id: string) {
+    const r = this.ownMilestone(id);
+    if (!r) return;
+    this.db.milestones.delete(id);
+    this.db.emit('milestones', r.coupleId);
   }
 
   // ---------- Paar-Quiz ----------

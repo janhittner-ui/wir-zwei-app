@@ -142,6 +142,22 @@ export interface Media {
   createdBy: string | null;
   createdAt: string;
 }
+export type MilestoneIcon = 'heart' | 'date' | 'kiss' | 'travel' | 'home' | 'ring' | 'wedding' | 'baby' | 'star';
+/** Meilenstein des Paares (Zeitleiste hinter der Paar-Karte) */
+export interface Milestone {
+  id: string;
+  title: string;
+  icon: MilestoneIcon;
+  /** ISO-Datum JJJJ-MM-TT */
+  date: string;
+  note: string | null;
+  /** Foto aus dem Album (optional) */
+  photoId: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+export type MilestoneInput = Pick<Milestone, 'title' | 'icon' | 'date' | 'note' | 'photoId'>;
+
 /** Antwort im Paar-Quiz; answer = null heißt übersprungen */
 export interface QuizAnswer {
   id: string;
