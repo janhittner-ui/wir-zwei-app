@@ -9,9 +9,9 @@ Stand: [Datum]
 ## 1. Geltungsbereich und Anbieter
 
 1.1 Diese Bedingungen gelten für die Nutzung der App „Paarweise“ (im Folgenden „App“) und aller darin angebotenen
-Funktionen, auch des kostenpflichtigen Abos „Paarweise Plus“ [Abo-Name].
+Funktionen, auch des kostenpflichtigen Abos „Paarweise Plus“.
 
-1.2 Anbieter ist [Vorname Nachname], [Straße Hausnummer], [Postleitzahl Ort], E-Mail: [E-Mail-Adresse für die App]
+1.2 Anbieter ist Jan Julius Hittner, Hoherainstraße 1, 35075 Gladenbach, E-Mail: Janjulius2003@web.de
 (im Folgenden „wir“). Die vollständigen Angaben stehen im Impressum.
 
 1.3 Die App richtet sich an Verbraucherinnen und Verbraucher. Abweichende Bedingungen der Nutzer gelten nicht.
@@ -45,7 +45,7 @@ Eingaben. Sie sind kein Medizinprodukt, ersetzen keinen ärztlichen Rat und sind
 ## 3. Konto und Paar
 
 3.1 Für die Nutzung braucht jede Person ein eigenes Konto mit E-Mail-Adresse und Passwort. Ihr müsst mindestens
-[16] Jahre alt sein. Die Angaben müssen stimmen, das Passwort haltet ihr geheim.
+16 Jahre alt sein. Die Angaben müssen stimmen, das Passwort haltet ihr geheim.
 
 3.2 Zwei Konten verbinden sich über einen Einladungscode zu einem Paar. Ein Paar hat höchstens zwei Mitglieder. Beide
 sehen und bearbeiten die gemeinsamen Inhalte. Ausnahmen: Geschenkideen für den Partner sieht nur, wer sie anlegt, und
@@ -65,7 +65,7 @@ Beispiel Urheberrecht, Persönlichkeitsrechte anderer Personen, strafbare Inhalt
 4.3 Bitte sichert wichtige Fotos und Daten zusätzlich selbst. Wir sichern die Daten technisch, eine Garantie gegen jeden
 Verlust können wir nicht geben.
 
-## 5. Abo „Paarweise Plus“ [Abo-Name]
+## 5. Abo „Paarweise Plus“
 
 5.1 **Preise:** 2,99 € pro Monat oder 24,99 € pro Jahr. Maßgeblich ist der Preis, der euch vor dem Kauf im App Store
 angezeigt wird. Er enthält die gesetzliche Umsatzsteuer, die Apple abführt.
@@ -110,7 +110,7 @@ Widerrufsbelehrung aus dem Anhang einfügen.]
 
 Es gelten die gesetzlichen Rechte bei Mängeln digitaler Produkte (§§ 327 ff. BGB). Dazu gehört, dass wir die App mit
 Aktualisierungen versorgen, die für ihre Funktion und Sicherheit nötig sind. Bitte meldet Fehler an
-[E-Mail-Adresse für die App].
+Janjulius2003@web.de.
 
 ## 8. Haftung
 
@@ -129,7 +129,7 @@ auf den vorhersehbaren, typischen Schaden begrenzt.
 Verstößt jemand erheblich gegen diese Bedingungen (zum Beispiel durch rechtswidrige Inhalte oder Angriffe auf die
 Technik), dürfen wir das Konto nach vorheriger Warnung sperren oder kündigen. Bei schweren Verstößen auch ohne Warnung.
 Ein bezahlter Zeitraum wird in diesem Fall nach den Regeln von Apple behandelt. Wir können den Betrieb der kostenlosen
-Nutzung mit einer Frist von [drei Monaten] beenden. Ihr bekommt dann die Möglichkeit, eure Fotos herunterzuladen.
+Nutzung mit einer Frist von drei Monaten beenden. Ihr bekommt dann die Möglichkeit, eure Fotos herunterzuladen.
 
 ## 10. Hinweise zu Apple
 
@@ -137,7 +137,7 @@ Nutzung mit einer Frist von [drei Monaten] beenden. Ihr bekommt dann die Möglic
 verantwortlich.
 
 10.2 Apple ist nicht verpflichtet, Wartung oder Support für die App zu leisten. Wendet euch dafür an
-[E-Mail-Adresse für die App].
+Janjulius2003@web.de.
 
 10.3 Entspricht die App nicht einer Gewährleistung, könnt ihr Apple informieren, Apple erstattet dann gegebenenfalls
 den Kaufpreis. Darüber hinaus hat Apple keine Gewährleistungspflichten für die App.
@@ -157,7 +157,7 @@ Wie wir mit euren Daten umgehen, steht in der Datenschutzerklärung: [Link zur D
 
 ## 12. Änderungen dieser Bedingungen
 
-Ändern wir diese Bedingungen, informieren wir euch mindestens [sechs Wochen] vorher in der App. Für bestehende Abos gilt
+Ändern wir diese Bedingungen, informieren wir euch mindestens sechs Wochen vorher in der App. Für bestehende Abos gilt
 die Änderung nur, wenn ihr zustimmt, oder wenn sie euch nur Vorteile bringt beziehungsweise wegen neuer Gesetze oder
 Vorgaben von Apple nötig ist. Stimmt ihr einer Änderung nicht zu, könnt ihr das Konto löschen und das Abo kündigen.
 
@@ -186,8 +186,8 @@ Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertr
 
 Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsabschlusses.
 
-Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ([Vorname Nachname], [Straße Hausnummer], [Postleitzahl Ort],
-E-Mail: [E-Mail-Adresse für die App], Telefon: [Telefonnummer]) mittels einer eindeutigen Erklärung (z. B. ein mit der
+Um Ihr Widerrufsrecht auszuüben, müssen Sie uns (Jan Julius Hittner, Hoherainstraße 1, 35075 Gladenbach,
+E-Mail: Janjulius2003@web.de, Telefon: 0171 8290061) mittels einer eindeutigen Erklärung (z. B. ein mit der
 Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können
 dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
 
@@ -211,7 +211,7 @@ Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht.
 
 (Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)
 
-- An [Vorname Nachname], [Straße Hausnummer], [Postleitzahl Ort], E-Mail: [E-Mail-Adresse für die App]:
+- An Jan Julius Hittner, Hoherainstraße 1, 35075 Gladenbach, E-Mail: Janjulius2003@web.de:
 - Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden
   Dienstleistung: Abo „Paarweise Plus“
 - Bestellt am (*) / erhalten am (*)
@@ -226,9 +226,9 @@ Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht.
 
 ## Hinweise für dich (vor dem Veröffentlichen löschen)
 
-1. **Platzhalter:** Name, Adresse, E-Mail, Telefon, Datum („Stand“), Link zur Datenschutzerklärung. Außerdem
-   Entscheidungen: Abo-Name (Vorschlag „Paarweise Plus“), Mindestalter (Vorschlag 16, wegen DSGVO-Einwilligung),
-   Frist bei Einstellung der kostenlosen Nutzung (Vorschlag 3 Monate), Vorlauf bei AGB-Änderungen (Vorschlag 6 Wochen).
+1. **Noch offen:** Datum („Stand“) und Link zur Datenschutzerklärung, sobald die Webseite steht. Vorschläge, die du
+   ändern kannst: Abo-Name „Paarweise Plus“, Mindestalter 16 (wegen DSGVO-Einwilligung), 3 Monate Frist bei Einstellung
+   der kostenlosen Nutzung, 6 Wochen Vorlauf bei AGB-Änderungen.
 2. **Probezeit:** Falls es eine kostenlose Testphase geben soll, muss sie in Abschnitt 5 ergänzt werden.
 3. **Jahresabo und deutsches Recht:** Nach § 309 Nr. 9 BGB dürfen sich Verträge mit Verbrauchern nach der ersten
    Laufzeit eigentlich nur noch auf unbestimmte Zeit mit monatlicher Kündigungsfrist verlängern. Apple verlängert ein

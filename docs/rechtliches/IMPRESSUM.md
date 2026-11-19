@@ -10,23 +10,20 @@
 
 **Anbieter der App „Paarweise“:**
 
-[Vorname Nachname]
-[Straße Hausnummer]
-[Postleitzahl Ort]
+Jan Julius Hittner
+Hoherainstraße 1
+35075 Gladenbach
 Deutschland
 
 ## Kontakt
 
-E-Mail: [E-Mail-Adresse für die App]
-Telefon: [Telefonnummer]
+E-Mail: Janjulius2003@web.de
+Telefon: 0171 8290061
 
 ## Umsatzsteuer
 
-[Variante A, wenn du Kleinunternehmer bist:]
+[Nur stehen lassen, wenn dein Gewerbe die Kleinunternehmerregelung nutzt. Sonst diesen ganzen Abschnitt löschen.]
 Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).
-
-[Variante B, wenn du eine Umsatzsteuer-Identifikationsnummer hast:]
-Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: [USt-IdNr.]
 
 ## Verbraucherstreitbeilegung
 
@@ -42,8 +39,11 @@ teilzunehmen.
   ladungsfähige Anschrift stellen. Das vorher prüfen.
 - **Telefon:** Neben der E-Mail braucht es einen zweiten schnellen Kontaktweg. Statt Telefon geht meist auch ein
   Kontaktformular auf der Webseite. Dann die Telefonzeile durch „Kontaktformular: [Link]“ ersetzen.
-- **Umsatzsteuer:** Nur eine der beiden Varianten stehen lassen. Als Kleinunternehmer ohne USt-IdNr. Variante A.
-  Mit Steuerberatung abstimmen, besonders weil Apple die Zahlungen aus Irland abwickelt.
+- **Umsatzsteuer:** Du hast keine USt-IdNr., deshalb steht hier keine. Den Kleinunternehmer-Satz nur stehen lassen,
+  wenn dein bestehendes Gewerbe die Regelung nutzt. Mit Steuerberatung abstimmen, besonders weil Apple die Zahlungen
+  aus Irland abwickelt. Die App-Entwicklung beim Gewerbeamt als Erweiterung deines Gewerbes anmelden.
+- **Ändern:** E-Mail und Telefon kannst du jederzeit austauschen. Dann nur die Texte hier (und in den AGB) anpassen
+  und die Webseite aktualisieren.
 - **EU-Streitschlichtung:** Der früher übliche Link auf die EU-Plattform (OS-Plattform) gehört nicht mehr hinein, die
   Plattform wurde im Juli 2025 abgeschaltet.
 - **Wo es hin muss:** auf die Webseite der App, in die App (Einstellungen → Impressum) und als Link in App Store Connect.
