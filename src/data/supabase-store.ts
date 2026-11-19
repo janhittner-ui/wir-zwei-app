@@ -11,10 +11,10 @@ import { secureStorage } from './secure-storage';
 import { base64ToBytes } from '../lib/base64';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, Restaurant, RestaurantInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkDateIdea, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkDateIdea, checkRestaurant, checkStars, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -84,6 +84,13 @@ const toMilestone = (r: Row): Milestone => ({
 });
 const MILESTONE_COLS = 'id, title, icon, date, note, photo_id, created_by, created_at';
 const milestoneRow = (v: MilestoneInput) => ({ title: v.title, icon: v.icon, date: v.date, note: v.note, photo_id: v.photoId });
+const toRestaurant = (r: Row): Restaurant => ({
+  id: r.id, name: r.name, cuisine: r.cuisine, place: r.place, price: r.price, note: r.note, visitedOn: r.visited_on, photoId: r.photo_id,
+  ratings: ((r.restaurant_ratings ?? []) as Row[]).map((x) => ({ userId: x.user_id, stars: x.stars })),
+  createdBy: r.created_by, createdAt: r.created_at,
+});
+const RESTAURANT_COLS = 'id, name, cuisine, place, price, note, visited_on, photo_id, created_by, created_at, restaurant_ratings(user_id, stars)';
+const restaurantRow = (v: RestaurantInput) => ({ name: v.name, cuisine: v.cuisine, place: v.place, price: v.price, note: v.note, visited_on: v.visitedOn, photo_id: v.photoId });
 const toDateIdea = (r: Row): DateIdea => ({
   id: r.id, title: r.title, category: r.category, note: r.note, doneOn: r.done_on, photoId: r.photo_id, createdBy: r.created_by, createdAt: r.created_at,
 });
@@ -506,6 +513,33 @@ export class SupabaseStore implements DataStore {
   }
 
   // ---------- Meilensteine ----------
+  async listRestaurants() {
+    const r = must(await this.sb.from('restaurants').select(RESTAURANT_COLS).eq('couple_id', await this.coupleId()).order('created_at')) as Row[];
+    return r.map(toRestaurant);
+  }
+  async addRestaurant(r: RestaurantInput) {
+    return toRestaurant(one(await this.sb.from('restaurants').insert({ ...restaurantRow(checkRestaurant(r)), couple_id: await this.coupleId() })
+      .select(RESTAURANT_COLS).single()));
+  }
+  async updateRestaurant(id: string, r: RestaurantInput) {
+    must(await this.sb.from('restaurants').update(restaurantRow(checkRestaurant(r))).eq('id', id));
+  }
+  async deleteRestaurant(id: string) {
+    must(await this.sb.from('restaurants').delete().eq('id', id));
+  }
+  async rateRestaurant(id: string, stars: number | null) {
+    const s = checkStars(stars);
+    const me = (await this.getSession())?.userId;
+    if (!me) throw new Error('not_authenticated');
+    if (s == null) {
+      must(await this.sb.from('restaurant_ratings').delete().eq('restaurant_id', id).eq('user_id', me));
+      return;
+    }
+    // erst ändern, sonst neu anlegen (geändert werden darf nur die Sternzahl)
+    const upd = must(await this.sb.from('restaurant_ratings').update({ stars: s }).eq('restaurant_id', id).eq('user_id', me).select('stars')) as Row[];
+    if (!upd.length) must(await this.sb.from('restaurant_ratings').insert({ restaurant_id: id, couple_id: await this.coupleId(), stars: s }));
+  }
+
   async listDateIdeas() {
     const r = must(await this.sb.from('date_ideas').select(DATE_COLS).eq('couple_id', await this.coupleId()).order('created_at')) as Row[];
     return r.map(toDateIdea);
@@ -550,7 +584,7 @@ export class SupabaseStore implements DataStore {
 
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], quiz: ['quiz_answers'], milestones: ['milestones'], dates: ['date_ideas'], cycle: ['cycle_periods'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], quiz: ['quiz_answers'], milestones: ['milestones'], dates: ['date_ideas'], restaurants: ['restaurants', 'restaurant_ratings'], cycle: ['cycle_periods'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

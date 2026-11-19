@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, Restaurant, RestaurantInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'dates' | 'cycle' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'dates' | 'restaurants' | 'cycle' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -106,6 +106,15 @@ export interface DataStore {
   /** Eigener Schalter „mit dem Partner teilen“ (Standard: aus) */
   getCycleSharing(): Promise<boolean>;
   setCycleSharing(share: boolean): Promise<void>;
+
+  // Restaurants (besucht = mit Datum; Foto und Sterne nur wenn besucht)
+  listRestaurants(): Promise<Restaurant[]>;
+  addRestaurant(r: RestaurantInput): Promise<Restaurant>;
+  /** Zurück auf „wollen wir hin“ löscht die Sterne */
+  updateRestaurant(id: string, r: RestaurantInput): Promise<void>;
+  deleteRestaurant(id: string): Promise<void>;
+  /** Eigene Sterne setzen (null = entfernen) */
+  rateRestaurant(id: string, stars: number | null): Promise<void>;
 
   // Date-Liste (erledigt = mit Datum; Foto nur wenn erledigt)
   listDateIdeas(): Promise<DateIdea[]>;

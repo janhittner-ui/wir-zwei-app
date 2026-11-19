@@ -95,6 +95,7 @@ function Root() {
           <Stack.Screen name="meilensteine" />
           <Stack.Screen name="meilenstein" options={{ presentation: 'modal' }} />
           <Stack.Screen name="date-idee" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="restaurant" options={{ presentation: 'modal' }} />
           <Stack.Screen name="periode" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bereich/[key]" />
         </Stack.Protected>
