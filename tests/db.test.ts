@@ -306,6 +306,22 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal((await as(C, 'select * from public.couples')).length, 0);
   });
 
+  test('Quiz: Paar teilt Antworten, jede Frage einmal pro Runde, Spieler muss zum Paar gehören', async () => {
+    await as(A, `insert into public.quiz_answers (couple_id, question_id, player, answer) values ($1, 'lieblingsessen', $2, 'Lasagne')`, [couple, A]);
+    await as(B, `insert into public.quiz_answers (couple_id, question_id, player) values ($1, 'traumreise', $2)`, [couple, B]);
+    assert.equal((await as(B, 'select * from public.quiz_answers')).length, 2);
+    await fails(B, `insert into public.quiz_answers (couple_id, question_id, player, answer) values ($1, 'lieblingsessen', $2, 'Pizza')`, /quiz_once/, [couple, B]);
+    await as(B, `insert into public.quiz_answers (couple_id, round, question_id, player, answer) values ($1, 2, 'lieblingsessen', $2, 'Pizza')`, [couple, B]);
+    await fails(A, `insert into public.quiz_answers (couple_id, question_id, player) values ($1, 'x1', $2)`, /quiz_player_invalid/, [couple, C]);
+    await fails(A, `insert into public.quiz_answers (couple_id, question_id) values ($1, 'x2')`, /quiz_player_invalid/, [couple]);
+    await fails(A, `insert into public.quiz_answers (couple_id, question_id, player) values ($1, 'Böse Frage!', $2)`, /check constraint/, [couple, A]);
+    await fails(A, `insert into public.quiz_answers (couple_id, question_id, player, answer) values ($1, 'x3', $2, '   ')`, /check constraint/, [couple, A]);
+    await fails(A, `update public.quiz_answers set answer = 'geändert'`, /permission denied/);
+    assert.equal((await as(C, 'select * from public.quiz_answers')).length, 0);
+    await fails(C, `insert into public.quiz_answers (couple_id, question_id, player) values ($1, 'x4', $2)`, /row-level security|quiz_player_invalid/, [couple, C]);
+    await fails(null, 'select * from public.quiz_answers', /permission denied/);
+  });
+
   test('Persönliche Einstellungen: nur für einen selbst, Größe begrenzt', async () => {
     await as(A, `insert into public.user_prefs (prefs) values ('{"look":{"accent":"lila"}}')`);
     await as(B, `insert into public.user_prefs (prefs) values ('{"tabs":["listen"]}')`);
@@ -335,6 +351,8 @@ describe('Datenbank (strenge Prüfung)', () => {
     const evs = await as<{ who: string | null }>(A, 'select * from public.events');
     assert.equal(evs.length, 1);
     assert.equal(evs[0].who, null);
+    // Antworten von B bleiben, nur ohne Verweis auf B
+    assert.ok((await as<{ player: string | null }>(A, 'select player from public.quiz_answers')).some((r) => r.player === null));
     const items = await as<{ created_by: string | null }>(A, 'select * from public.shopping_items');
     assert.equal(items[0].created_by, null);
     assert.equal((await as(A, 'select * from public.profiles')).length, 1);
@@ -348,7 +366,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) + (select count(*) from public.quiz_answers) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

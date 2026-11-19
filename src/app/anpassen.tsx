@@ -11,7 +11,7 @@ import { Alert, Platform, ScrollView, Switch, View } from 'react-native';
 import { usePrefs } from '@/data/prefs';
 import { useApp, usePhotos } from '@/data/provider';
 import {
-  ACCENTS, ACCENT_LABEL, AREA_LABEL, DEFAULT_PREFS, HOME_LABEL, LIST_LABEL, move, toggleHidden,
+  ACCENTS, ACCENT_LABEL, AREA_LABEL, DEFAULT_PREFS, MAX_TABS, HOME_LABEL, LIST_LABEL, move, toggleHidden,
   type Mode, type Ordered, type Prefs,
 } from '@/lib/prefs';
 import { ACCENT_COLORS, fonts, useTheme } from '@/theme';
@@ -75,8 +75,9 @@ export default function Anpassen() {
 
       <OrderedSection
         title="Tab-Leiste"
-        footer="Start ist immer dabei. Ausgeblendete Bereiche findest du auf der Startseite ganz unten."
+        footer={`Start ist immer dabei, dazu passen bis zu ${MAX_TABS} Bereiche. Ausgeblendete Bereiche findest du auf der Startseite ganz unten.`}
         value={prefs.areas}
+        maxVisible={MAX_TABS}
         labels={AREA_LABEL}
         onChange={(areas) => set('areas', areas)}
         fixedFirst="Start"
@@ -156,9 +157,9 @@ function Row({ label, first, children, left }: { label: string; first?: boolean;
 }
 
 /** Liste mit Schaltern; „Bearbeiten“ blendet Pfeile zum Verschieben ein. */
-function OrderedSection<K extends string>({ title, footer, value, labels, onChange, minVisible = 0, fixedFirst, testID }: {
+function OrderedSection<K extends string>({ title, footer, value, labels, onChange, minVisible = 0, maxVisible = Infinity, fixedFirst, testID }: {
   title: string; footer?: string; value: Ordered<K>; labels: Record<K, string>; onChange: (v: Ordered<K>) => void;
-  minVisible?: number; fixedFirst?: string; testID: string;
+  minVisible?: number; maxVisible?: number; fixedFirst?: string; testID: string;
 }) {
   const t = useTheme();
   const [edit, setEdit] = useState(false);
@@ -173,7 +174,7 @@ function OrderedSection<K extends string>({ title, footer, value, labels, onChan
       ) : null}
       {value.order.map((k, i) => {
         const on = !value.hidden.includes(k);
-        const locked = on && visibleCount <= minVisible;
+        const locked = on ? visibleCount <= minVisible : visibleCount >= maxVisible;
         return (
           <Row key={k} label={labels[k]} first={!fixedFirst && i === 0}
             left={edit ? (
@@ -182,7 +183,7 @@ function OrderedSection<K extends string>({ title, footer, value, labels, onChan
                 <Arrow dir={1} disabled={i === value.order.length - 1} label={`${labels[k]} nach unten`} onPress={() => onChange(move(value, k, 1))} testID={`${testID}-down-${k}`} />
               </View>
             ) : null}>
-            <Switch value={on} disabled={locked} onValueChange={() => onChange(toggleHidden(value, k, minVisible))}
+            <Switch value={on} disabled={locked} onValueChange={() => onChange(toggleHidden(value, k, minVisible, maxVisible))}
               trackColor={{ true: t.green, false: t.lineStrong }} accessibilityLabel={labels[k]} testID={`${testID}-${k}`} />
           </Row>
         );

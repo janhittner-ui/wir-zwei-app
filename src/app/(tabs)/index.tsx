@@ -18,7 +18,7 @@ import { AREA_LABEL, visible, type Area, type HomeCard } from '@/lib/prefs';
 import { shopEmoji } from '@/lib/shop-emoji';
 import { nextTrip, tripCountdown, tripRange, tripStatus } from '@/lib/trips';
 import { fonts, useTheme } from '@/theme';
-import { IconCalendar, IconFork, IconGear, IconList, IconPencil, IconPhoto, IconPlus, IconRight, IconSliders, IconSuitcase } from '@/ui/icons';
+import { IconCalendar, IconFork, IconGear, IconList, IconPencil, IconPhoto, IconPlus, IconQuiz, IconRight, IconSliders, IconSuitcase } from '@/ui/icons';
 import { EventRow } from '@/ui/event-row';
 import { Button, Card, CardHead, DateBadge, Press, Screen, T } from '@/ui/kit';
 import { usePhotoUrls } from '@/ui/photo-urls';
@@ -158,7 +158,7 @@ function ShoppingCard() {
 }
 
 const AREA_ICON: Record<Area, (p: { color: string; size?: number }) => ReactNode> = {
-  kalender: IconCalendar, listen: IconList, rezepte: IconFork, album: IconPhoto,
+  kalender: IconCalendar, listen: IconList, rezepte: IconFork, album: IconPhoto, quiz: IconQuiz,
 };
 
 /** Bereiche, die nicht in der Tab-Leiste sind (in „Anpassen“ ausgeblendet) */

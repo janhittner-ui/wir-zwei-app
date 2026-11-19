@@ -13,6 +13,7 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 | Termine (Titel, Datum, Uhrzeit, Notiz, für wen) | Kalender | Tabelle `events` |
 | Einkaufseinträge | Einkaufsliste | Tabelle `shopping_items` |
 | Geburtstage, Notizen, Rezepte, Reisen + Packlisten, Filme & Serien, Geschenkideen + Wünsche | Die jeweiligen Bereiche | Tabellen `birthdays`, `notes`, `recipes`, `trips`, `trip_items`, `media`, `gifts` |
+| Quiz-Antworten (welche Frage, wer dran war, Antwort) | Paar-Quiz | Tabelle `quiz_answers`, nur für euch beide |
 | Persönliche Einstellungen aus „Anpassen“ (Farbe, Tabs, Startseite, Schalter, gewähltes Paar-Bild) | Die App so zeigen, wie du sie eingestellt hast | Tabelle `user_prefs`, nur für dich selbst lesbar (auch nicht für den Partner); Kopie im Schlüsselbund des iPhones für einen schnellen Start |
 | Fotos (verkleinert auf max. 1600 Pixel, JPEG) und Bildunterschrift | Gemeinsames Album | **Privater** Speicher-Bucket `photos` (Frankfurt) + Tabelle `photos` |
 

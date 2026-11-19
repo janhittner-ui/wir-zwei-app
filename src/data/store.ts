@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -97,6 +97,10 @@ export interface DataStore {
   updateGift(id: string, g: GiftInput): Promise<void>;
   setGiftDone(id: string, done: boolean): Promise<void>;
   deleteGift(id: string): Promise<void>;
+
+  // Paar-Quiz (die Fragen stecken in der App, gespeichert werden nur Antworten)
+  listQuizAnswers(): Promise<QuizAnswer[]>;
+  addQuizAnswer(a: QuizAnswerInput): Promise<QuizAnswer>;
 
   // Einkauf
   listShopping(): Promise<ShoppingItem[]>;

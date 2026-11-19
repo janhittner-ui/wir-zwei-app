@@ -11,10 +11,10 @@ import { secureStorage } from './secure-storage';
 import { base64ToBytes } from '../lib/base64';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -74,6 +74,10 @@ const toGift = (r: Row): Gift => ({
 });
 const GIFT_COLS = 'id, kind, title, for_user, for_name, occasion, link, note, done, wish_id, created_by, created_at';
 const giftRow = (v: GiftInput) => ({ title: v.title, for_user: v.forUser, for_name: v.forName, occasion: v.occasion, link: v.link, note: v.note });
+const toQuiz = (r: Row): QuizAnswer => ({
+  id: r.id, round: r.round, questionId: r.question_id, player: r.player, answer: r.answer, createdBy: r.created_by, createdAt: r.created_at,
+});
+const QUIZ_COLS = 'id, round, question_id, player, answer, created_by, created_at';
 const NOTE_COLS = 'id, title, body, color, created_by, updated_by, updated_at';
 const BD_COLS = 'id, name, month, day, year, note, created_by';
 const eventRow = (e: EventInput) => ({ title: e.title, date: e.date, time: e.time, note: e.note, who: e.who });
@@ -457,9 +461,21 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('gifts').delete().eq('id', id));
   }
 
+  // ---------- Paar-Quiz ----------
+  async listQuizAnswers() {
+    const r = must(await this.sb.from('quiz_answers').select(QUIZ_COLS).eq('couple_id', await this.coupleId()).order('created_at')) as Row[];
+    return r.map(toQuiz);
+  }
+  async addQuizAnswer(a: QuizAnswerInput) {
+    const v = checkQuizAnswer(a);
+    return toQuiz(one(await this.sb.from('quiz_answers')
+      .insert({ round: v.round, question_id: v.questionId, player: v.player, answer: v.answer, couple_id: await this.coupleId() })
+      .select(QUIZ_COLS).single()));
+  }
+
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], quiz: ['quiz_answers'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

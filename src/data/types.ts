@@ -142,6 +142,19 @@ export interface Media {
   createdBy: string | null;
   createdAt: string;
 }
+/** Antwort im Paar-Quiz; answer = null heißt übersprungen */
+export interface QuizAnswer {
+  id: string;
+  round: number;
+  questionId: string;
+  /** wer dran war */
+  player: string | null;
+  answer: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+export type QuizAnswerInput = Pick<QuizAnswer, 'round' | 'questionId' | 'player' | 'answer'>;
+
 export type MediaInput = Pick<Media, 'title' | 'kind' | 'platform' | 'note' | 'rating'>;
 
 export type GiftKind = 'idea' | 'wish';
