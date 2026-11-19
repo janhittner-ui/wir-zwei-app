@@ -306,6 +306,37 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal((await as(C, 'select * from public.couples')).length, 0);
   });
 
+  test('Zyklus: privat bis zum eigenen Schalter, nur Beginn/Ende, nur selbst änderbar', async () => {
+    const [p] = await as<{ id: string; user_id: string }>(B, `insert into public.cycle_periods (start_date, end_date) values (current_date - 30, current_date - 26) returning id, user_id`);
+    assert.equal(p.user_id, B);
+    await as(B, `insert into public.cycle_periods (start_date) values (current_date - 2)`);
+    // Ohne Teilen sieht der Partner nichts
+    assert.equal((await as(A, 'select * from public.cycle_periods')).length, 0);
+    assert.equal((await as(B, 'select * from public.cycle_periods')).length, 2);
+    await as(B, `insert into public.cycle_settings (share) values (true)`);
+    assert.equal((await as(A, 'select * from public.cycle_periods')).length, 2);
+    // Fremde sehen nie etwas, auch nicht mit Teilen
+    assert.equal((await as(C, 'select * from public.cycle_periods')).length, 0);
+    // Partner kann nichts ändern, löschen oder für B eintragen
+    assert.equal((await as(A, `update public.cycle_periods set end_date = start_date + 3 where id = $1 returning id`, [p.id])).length, 0);
+    assert.equal((await as(A, `delete from public.cycle_periods where id = $1 returning id`, [p.id])).length, 0);
+    await fails(A, `insert into public.cycle_periods (user_id, start_date) values ($1, current_date)`, /row-level security/, [B]);
+    await fails(B, `update public.cycle_periods set user_id = $1 where id = $2`, /permission denied/, [A, p.id]);
+    // Einstellungen von B kann A weder lesen noch ändern
+    assert.equal((await as(A, 'select * from public.cycle_settings')).length, 0);
+    assert.equal((await as(A, `update public.cycle_settings set share = false returning user_id`)).length, 0);
+    // Prüfungen
+    await fails(B, `insert into public.cycle_periods (start_date) values (current_date + 5)`, /check constraint/);
+    await fails(B, `insert into public.cycle_periods (start_date, end_date) values (current_date - 60, current_date - 61)`, /cycle_period_length/);
+    await fails(B, `insert into public.cycle_periods (start_date, end_date) values (current_date - 90, current_date - 60)`, /cycle_period_length/);
+    await fails(B, `insert into public.cycle_periods (start_date) values (current_date - 30)`, /cycle_once/);
+    // Teilen aus: wieder privat
+    await as(B, `update public.cycle_settings set share = false`);
+    assert.equal((await as(A, 'select * from public.cycle_periods')).length, 0);
+    await as(B, `update public.cycle_settings set share = true`);
+    await fails(null, 'select * from public.cycle_periods', /permission denied/);
+  });
+
   test('Meilensteine: Paar teilt sie, Foto nur aus eigenem Album, Foto löschen lässt Meilenstein stehen', async () => {
     const [ph] = await as<{ id: string }>(A, `insert into public.photos (couple_id, width, height) values ($1, 800, 600) returning id`, [couple]);
     const [m] = await as<{ id: string; icon: string }>(A, `insert into public.milestones (couple_id, title, icon, date, photo_id) values ($1, 'Verlobung', 'ring', '2025-08-02', $2) returning id, icon`, [couple, ph.id]);
@@ -369,6 +400,8 @@ describe('Datenbank (strenge Prüfung)', () => {
     const users = (await db.query<{ id: string }>('select id from auth.users')).rows.map((r) => r.id);
     assert.ok(!users.includes(B));
     assert.equal((await db.query('select * from public.user_prefs where user_id = $1', [B])).rows.length, 0);
+    assert.equal((await db.query('select * from public.cycle_periods where user_id = $1', [B])).rows.length, 0);
+    assert.equal((await db.query('select * from public.cycle_settings where user_id = $1', [B])).rows.length, 0);
     const evs = await as<{ who: string | null }>(A, 'select * from public.events');
     assert.equal(evs.length, 1);
     assert.equal(evs[0].who, null);

@@ -7,8 +7,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { usePrefs } from '@/data/prefs';
-import { useApp, useBirthdays, useEvents } from '@/data/provider';
+import { useApp, useBirthdays, useCyclePeriods, useEvents } from '@/data/provider';
 import type { Birthday } from '@/data/types';
+import { cycleMarks, type DayMark } from '@/lib/cycle';
 import { birthdayIn, searchKey, upcomingBirthdays } from '@/lib/birthdays';
 import { cmpEvent, longDay, monthGrid, MONTHS, parse, WD_SHORT, ymd } from '@/lib/dates';
 import { fonts, personColors, useTheme } from '@/theme';
@@ -16,17 +17,24 @@ import { BirthdayRow } from '@/ui/birthday-row';
 import { EventRow } from '@/ui/event-row';
 import { IconLeft, IconPlus, IconRight, IconX } from '@/ui/icons';
 import { Banner, Button, Card, CardHead, Input, Press, Screen, Segmented, T } from '@/ui/kit';
+import { CycleView } from '@/ui/cycle-view';
 import { TripsView } from '@/ui/trips-view';
 
-type Seg = 'monat' | 'geb' | 'reisen';
+type Seg = 'monat' | 'geb' | 'reisen' | 'zyklus';
+const SEGS: Seg[] = ['monat', 'geb', 'reisen', 'zyklus'];
+const isSeg = (s?: string): s is Seg => SEGS.includes(s as Seg);
 
 export default function Kalender() {
   const t = useTheme();
   const params = useLocalSearchParams<{ seg?: string }>();
-  const [seg, setSeg] = useState<Seg>(params.seg === 'geb' || params.seg === 'reisen' ? params.seg : 'monat');
+  const showCycle = usePrefs().prefs.kalender.showCycle;
+  const [picked, setSeg] = useState<Seg>(isSeg(params.seg) ? params.seg : 'monat');
   useEffect(() => {
-    if (params.seg === 'geb' || params.seg === 'monat' || params.seg === 'reisen') setSeg(params.seg);
+    if (isSeg(params.seg)) setSeg(params.seg);
   }, [params.seg]);
+  // „Zyklus“ lässt sich unter Anpassen ausblenden; ein direkter Sprung dorthin zeigt ihn trotzdem
+  const cycleTab = showCycle || params.seg === 'zyklus';
+  const seg: Seg = picked === 'zyklus' && !cycleTab ? 'monat' : picked;
 
   return (
     <Screen>
@@ -35,9 +43,10 @@ export default function Kalender() {
           <T v="eyebrow">Gemeinsam planen</T>
           <T v="display">Kalender</T>
         </View>
-        <Segmented<Seg> value={seg} onChange={setSeg} options={[{ key: 'monat', label: 'Monat' }, { key: 'geb', label: 'Geburtstage' }, { key: 'reisen', label: 'Reisen' }]} />
+        <Segmented<Seg> value={seg} onChange={setSeg}
+          options={[{ key: 'monat', label: 'Monat' }, { key: 'geb', label: 'Geburtstage' }, { key: 'reisen', label: 'Reisen' }, ...(cycleTab ? [{ key: 'zyklus' as const, label: 'Zyklus' }] : [])]} />
       </View>
-      {seg === 'monat' ? <MonthView /> : seg === 'geb' ? <BirthdayList /> : <TripsView />}
+      {seg === 'monat' ? <MonthView /> : seg === 'geb' ? <BirthdayList /> : seg === 'reisen' ? <TripsView /> : <CycleView />}
     </Screen>
   );
 }
@@ -51,6 +60,15 @@ function MonthView() {
   const { items: allBirthdays } = useBirthdays();
   const { prefs } = usePrefs();
   const showBd = prefs.kalender.showBirthdays;
+  // Zyklus dezent markieren: eigener, sonst der geteilte des Partners
+  const { profile } = useApp();
+  const { items: periods } = useCyclePeriods();
+  const showMarks = prefs.kalender.showCycle && prefs.kalender.cycleInMonth;
+  const marks = useMemo(() => {
+    if (!showMarks) return new Map<string, DayMark>();
+    const mine = periods.filter((p) => p.userId === profile?.id);
+    return cycleMarks(mine.length ? mine : periods);
+  }, [periods, profile?.id, showMarks]);
   const birthdays = showBd ? allBirthdays : NO_BIRTHDAYS;
   const now = new Date();
   const [month, setMonth] = useState({ y: now.getFullYear(), m: now.getMonth() });
@@ -108,11 +126,13 @@ function MonthView() {
             const isSel = iso === sel;
             const isToday = iso === todayIso;
             const we = d.getDay() === 0 || d.getDay() === 6;
+            const mark = marks.get(iso);
             const dots = [...evs.slice(0, 3).map((e) => personColors(t, colorOf(e.who)).dot), ...(bds.length ? [t.yellow] : [])].slice(0, 4);
             const label = [
               longDay(d),
               evs.length ? `${evs.length} Termin${evs.length > 1 ? 'e' : ''}` : null,
               bds.length ? `Geburtstag von ${bds.map((b) => b.name).join(', ')}` : null,
+              mark ? MARK_LABEL[mark] : null,
             ].filter(Boolean).join(', ');
             return (
               <Press
@@ -124,6 +144,7 @@ function MonthView() {
                 <View style={[{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14 }, isToday && { backgroundColor: t.ink }]}>
                   <Text style={{ fontFamily: fonts.bodySemi, color: isToday ? t.bg : we ? t.muted : t.ink }}>{d.getDate()}</Text>
                 </View>
+                <View style={{ width: 16, height: 3, borderRadius: 2, marginTop: -1, backgroundColor: mark ? markColor(t, mark) : 'transparent' }} />
                 <View style={{ flexDirection: 'row', gap: 3, height: 6 }}>
                   {dots.map((c, k) => <View key={k} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: c }} />)}
                 </View>
@@ -136,6 +157,8 @@ function MonthView() {
             <Legend key={m.id} color={personColors(t, m.color).dot} label={m.displayName} />
           ))}
           {showBd ? <Legend color={t.yellow} label="Geburtstag" /> : null}
+          {marks.size ? <Legend color={t.pink} label="Periode" bar /> : null}
+          {marks.size ? <Legend color={markColor(t, 'fertile')} label="fruchtbar" bar /> : null}
         </View>
       </Card>
 
@@ -152,10 +175,15 @@ function MonthView() {
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+const MARK_LABEL: Record<DayMark, string> = { period: 'Periode', predicted: 'Periode erwartet', fertile: 'fruchtbar (geschätzt)', ovulation: 'Eisprung (geschätzt)' };
+function markColor(t: ReturnType<typeof useTheme>, m: DayMark) {
+  return m === 'period' ? t.pink : m === 'predicted' ? (t.dark ? 'rgba(255,158,203,0.4)' : 'rgba(255,141,193,0.45)') : m === 'ovulation' ? t.green : (t.dark ? 'rgba(124,203,159,0.5)' : 'rgba(46,125,87,0.4)');
+}
+
+function Legend({ color, label, bar }: { color: string; label: string; bar?: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />
+      <View style={bar ? { width: 12, height: 3, borderRadius: 2, backgroundColor: color } : { width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />
       <T v="small" style={{ fontFamily: fonts.bodySemi }}>{label}</T>
     </View>
   );

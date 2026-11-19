@@ -13,6 +13,7 @@ schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie
 | Termine (Titel, Datum, Uhrzeit, Notiz, für wen) | Kalender | Tabelle `events` |
 | Einkaufseinträge | Einkaufsliste | Tabelle `shopping_items` |
 | Geburtstage, Notizen, Rezepte, Reisen + Packlisten, Filme & Serien, Geschenkideen + Wünsche | Die jeweiligen Bereiche | Tabellen `birthdays`, `notes`, `recipes`, `trips`, `trip_items`, `media`, `gifts` |
+| **Zyklus: nur Beginn und Ende der Periode** (Gesundheitsdaten, Art. 9 DSGVO) | Vorhersage im Kalender-Reiter „Zyklus“ | Tabellen `cycle_periods` und `cycle_settings` (Schalter „teilen“). Gehören der Person, nicht dem Paar |
 | Meilensteine (Titel, Datum, Notiz, Verweis auf ein Album-Foto) | Zeitleiste und besondere Tage | Tabelle `milestones`, nur für euch beide |
 | Quiz-Antworten (welche Frage, wer dran war, Antwort) | Paar-Quiz | Tabelle `quiz_answers`, nur für euch beide |
 | Persönliche Einstellungen aus „Anpassen“ (Farbe, Tabs, Startseite, Schalter, gewähltes Paar-Bild) | Die App so zeigen, wie du sie eingestellt hast | Tabelle `user_prefs`, nur für dich selbst lesbar (auch nicht für den Partner); Kopie im Schlüsselbund des iPhones für einen schnellen Start |
@@ -35,8 +36,16 @@ Nicht gespeichert: Passwörter im Klartext, Telefonnummer, Standort (auch nicht 
 - **Fotos** liegen in einem privaten Speicher. Es gibt keine öffentlichen Links: Die App holt sich für die Anzeige Links, die nach einer Stunde ablaufen, und nur Mitglieder des Paares bekommen sie (Regeln im Speicher, mit Tests abgesichert). Hochladen geht nur in den Ordner des eigenen Paares und nur mit passendem Album-Eintrag.
 - In der App steckt nur der öffentliche „publishable key“. Der geheime Schlüssel wird nirgends in der App verwendet.
 
+## Zyklus (Gesundheitsdaten, Art. 9 DSGVO)
+- **Datenminimierung:** gespeichert werden nur Beginn und Ende der Periode. Keine Symptome, Stimmung, Gewicht, Temperatur, Sex oder Verhütung. Vorhersage, Eisprung und fruchtbare Tage rechnet die App auf dem Handy aus und speichert sie nicht.
+- **Privat als Standard:** Die Einträge gehören der Person, die sie macht. Der Partner sieht sie nur, wenn diese Person „Mit … teilen“ einschaltet. Die Datenbank prüft das (Row Level Security mit Tests), nicht nur die App. Ändern und löschen kann nur die Person selbst. Ausschalten macht die Daten sofort wieder privat.
+- **Rechtsgrundlage:** ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a DSGVO) durch das freiwillige Eintragen. In der Datenschutzerklärung den Abschnitt Zyklus extra nennen, mit Hinweis auf Widerruf (Einträge löschen, Konto löschen).
+- Hinweis in der App: Die Vorhersage ist eine Schätzung und **keine Verhütungsmethode**.
+- Für Apple App Privacy zusätzlich: *Gesundheit & Fitness → Gesundheit*: mit dir verknüpft, Zweck App-Funktionalität, kein Tracking.
+- Konto löschen löscht alle Zyklus-Einträge sofort mit; Paar verlassen beendet das Teilen automatisch.
+
 ## Löschen (DSGVO Art. 17, Apple-Richtlinie 5.1.1(v))
-- **Einstellungen → Konto löschen** löscht sofort und endgültig: Konto, E-Mail, Profil, persönliche Einstellungen.
+- **Einstellungen → Konto löschen** löscht sofort und endgültig: Konto, E-Mail, Profil, persönliche Einstellungen, Zyklus-Einträge.
 - Gemeinsame Einträge bleiben beim Partner, aber ohne Verweis auf das gelöschte Konto.
 - Ist niemand mehr im Paar, werden alle Paar-Daten mitgelöscht. Die App löscht dabei vorher auch alle Fotodateien des Paares aus dem Speicher.
 - **Paar verlassen** funktioniert genauso, nur ohne das Konto zu löschen.
@@ -62,5 +71,6 @@ Wann es sich lohnt: wenn ihr später sehr persönliche Inhalte anbietet (z. B. T
 - [ ] Apple **App Privacy** („Datenschutz-Etiketten“) ausfüllen, voraussichtlich:
   - Kontaktinformationen → E-Mail-Adresse: *mit dir verknüpft*, Zweck *App-Funktionalität*, **kein Tracking**
   - Benutzerinhalte → Sonstige Benutzerinhalte: *mit dir verknüpft*, Zweck *App-Funktionalität*, **kein Tracking**
+  - Gesundheit & Fitness → Gesundheit (nur Zyklus-Einträge): *mit dir verknüpft*, Zweck *App-Funktionalität*, **kein Tracking**
   - Alles andere: nicht erhoben
 - [ ] Für die Apple-Prüfung ein Test-Konto (E-Mail + Passwort) anlegen und in App Store Connect hinterlegen.

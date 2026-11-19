@@ -104,10 +104,18 @@ export default function Anpassen() {
         testID="lists"
       />
 
-      <Section title="Kalender">
+      <Section title="Kalender" footer="Die Zyklus-Daten selbst bleiben privat, bis du sie im Reiter „Zyklus“ teilst.">
         <Row label="Geburtstage im Monat zeigen" first>
-          <Switch value={prefs.kalender.showBirthdays} onValueChange={(showBirthdays) => set('kalender', { showBirthdays })}
+          <Switch value={prefs.kalender.showBirthdays} onValueChange={(showBirthdays) => set('kalender', { ...prefs.kalender, showBirthdays })}
             trackColor={{ true: t.green, false: t.lineStrong }} accessibilityLabel="Geburtstage im Monat zeigen" testID="pref-kal-bd" />
+        </Row>
+        <Row label="Reiter „Zyklus“ zeigen">
+          <Switch value={prefs.kalender.showCycle} onValueChange={(showCycle) => set('kalender', { ...prefs.kalender, showCycle })}
+            trackColor={{ true: t.green, false: t.lineStrong }} accessibilityLabel="Reiter Zyklus zeigen" testID="pref-kal-cycle" />
+        </Row>
+        <Row label="Zyklus im Monat markieren">
+          <Switch value={prefs.kalender.cycleInMonth} disabled={!prefs.kalender.showCycle} onValueChange={(cycleInMonth) => set('kalender', { ...prefs.kalender, cycleInMonth })}
+            trackColor={{ true: t.green, false: t.lineStrong }} accessibilityLabel="Zyklus im Monat markieren" testID="pref-kal-cycle-month" />
         </Row>
       </Section>
 

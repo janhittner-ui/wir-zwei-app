@@ -11,10 +11,10 @@ import { secureStorage } from './secure-storage';
 import { base64ToBytes } from '../lib/base64';
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -77,6 +77,8 @@ const giftRow = (v: GiftInput) => ({ title: v.title, for_user: v.forUser, for_na
 const toQuiz = (r: Row): QuizAnswer => ({
   id: r.id, round: r.round, questionId: r.question_id, player: r.player, answer: r.answer, createdBy: r.created_by, createdAt: r.created_at,
 });
+const toPeriod = (r: Row): CyclePeriod => ({ id: r.id, userId: r.user_id, start: r.start_date, end: r.end_date, createdAt: r.created_at });
+const PERIOD_COLS = 'id, user_id, start_date, end_date, created_at';
 const toMilestone = (r: Row): Milestone => ({
   id: r.id, title: r.title, icon: r.icon, date: r.date, note: r.note, photoId: r.photo_id, createdBy: r.created_by, createdAt: r.created_at,
 });
@@ -466,6 +468,38 @@ export class SupabaseStore implements DataStore {
     must(await this.sb.from('gifts').delete().eq('id', id));
   }
 
+  // ---------- Zyklus ----------
+  async listCyclePeriods() {
+    // Die Datenbank liefert nur eigene und (falls geteilt) die des Partners
+    const r = must(await this.sb.from('cycle_periods').select(PERIOD_COLS).order('start_date')) as Row[];
+    return r.map(toPeriod);
+  }
+  private async myPeriods(except?: string) {
+    const me = await this.uid();
+    const r = must(await this.sb.from('cycle_periods').select(PERIOD_COLS).eq('user_id', me)) as Row[];
+    return r.map(toPeriod).filter((p) => p.id !== except);
+  }
+  async addCyclePeriod(p: CyclePeriodInput) {
+    const v = checkPeriod(p, await this.myPeriods());
+    return toPeriod(one(await this.sb.from('cycle_periods').insert({ start_date: v.start, end_date: v.end }).select(PERIOD_COLS).single()));
+  }
+  async updateCyclePeriod(id: string, p: CyclePeriodInput) {
+    const v = checkPeriod(p, await this.myPeriods(id));
+    must(await this.sb.from('cycle_periods').update({ start_date: v.start, end_date: v.end }).eq('id', id).eq('user_id', await this.uid()));
+  }
+  async deleteCyclePeriod(id: string) {
+    must(await this.sb.from('cycle_periods').delete().eq('id', id).eq('user_id', await this.uid()));
+  }
+  async getCycleSharing() {
+    const me = await this.uid();
+    const r = must(await this.sb.from('cycle_settings').select('share').eq('user_id', me).maybeSingle());
+    return !!r?.share;
+  }
+  async setCycleSharing(share: boolean) {
+    const me = await this.uid();
+    must(await this.sb.from('cycle_settings').upsert({ user_id: me, share: !!share }, { onConflict: 'user_id' }));
+  }
+
   // ---------- Meilensteine ----------
   async listMilestones() {
     const r = must(await this.sb.from('milestones').select(MILESTONE_COLS).eq('couple_id', await this.coupleId()).order('date').order('created_at')) as Row[];
@@ -496,7 +530,7 @@ export class SupabaseStore implements DataStore {
 
   // ---------- Live-Sync ----------
   subscribe(table: LiveTable, cb: () => void): Unsubscribe {
-    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], quiz: ['quiz_answers'], milestones: ['milestones'], couple: ['couples', 'couple_members'] }[table];
+    const tables = { events: ['events'], shopping: ['shopping_items'], birthdays: ['birthdays'], notes: ['notes'], recipes: ['recipes'], trips: ['trips', 'trip_items'], photos: ['photos'], media: ['media'], gifts: ['gifts'], quiz: ['quiz_answers'], milestones: ['milestones'], cycle: ['cycle_periods'], couple: ['couples', 'couple_members'] }[table];
     const ch = this.sb.channel(`wz-${table}-${Math.random().toString(36).slice(2)}`);
     // RLS filtert serverseitig: es kommen nur Änderungen des eigenen Paares an.
     for (const t of tables) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, () => cb());

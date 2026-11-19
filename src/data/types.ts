@@ -142,6 +142,18 @@ export interface Media {
   createdBy: string | null;
   createdAt: string;
 }
+/** Periode (Zyklus): nur Beginn und Ende; gehört der Person, die sie einträgt */
+export interface CyclePeriod {
+  id: string;
+  userId: string;
+  /** ISO-Datum */
+  start: string;
+  /** ISO-Datum oder null, solange sie läuft */
+  end: string | null;
+  createdAt: string;
+}
+export type CyclePeriodInput = Pick<CyclePeriod, 'start' | 'end'>;
+
 export type MilestoneIcon = 'heart' | 'date' | 'kiss' | 'travel' | 'home' | 'ring' | 'wedding' | 'baby' | 'star';
 /** Meilenstein des Paares (Zeitleiste hinter der Paar-Karte) */
 export interface Milestone {

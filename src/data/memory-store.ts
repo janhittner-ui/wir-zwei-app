@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -54,6 +54,8 @@ export class MemoryBackend {
   gifts = new Map<string, GiftRow>();
   quiz = new Map<string, QuizRow>();
   milestones = new Map<string, MilestoneRow>();
+  periods = new Map<string, CyclePeriod>();
+  cycleShare = new Map<string, boolean>(); // userId -> teilt mit Partner
   prefs = new Map<string, Record<string, unknown>>(); // userId -> Einstellungen
   /** Bilddateien (Pfad → data:-URL), wie der private Speicher */
   files = new Map<string, string>();
@@ -254,6 +256,8 @@ export class MemoryStore implements DataStore {
       if (n.updatedBy === me) n.updatedBy = null;
     }
     this.db.prefs.delete(me);
+    for (const [k, p] of this.db.periods) if (p.userId === me) this.db.periods.delete(k);
+    this.db.cycleShare.delete(me);
     this.db.profiles.delete(me);
     this.db.users.delete(me);
     this.db.passwords.delete(me);
@@ -588,6 +592,52 @@ export class MemoryStore implements DataStore {
     if (v.forUser !== r.forUser) this.checkGiftTarget(r.coupleId, { ...v, wishId: null });
     Object.assign(r, { title: v.title, forUser: v.forUser, forName: v.forName, occasion: v.occasion, link: v.link, note: v.note });
     this.db.emit('gifts', r.coupleId);
+  }
+
+  // ---------- Zyklus ----------
+  private cycleVisible(owner: string) {
+    const me = this.uid();
+    if (owner === me) return true;
+    const cid = this.db.members.get(me);
+    return !!this.db.cycleShare.get(owner) && !!cid && this.db.members.get(owner) === cid;
+  }
+  private emitCycle() {
+    const cid = this.myCoupleOrNull();
+    if (cid) this.db.emit('cycle', cid);
+  }
+  async listCyclePeriods() {
+    return [...this.db.periods.values()].filter((p) => this.cycleVisible(p.userId))
+      .sort((a, b) => a.start.localeCompare(b.start)).map((p) => ({ ...p }));
+  }
+  private mine(except?: string) {
+    const me = this.uid();
+    return [...this.db.periods.values()].filter((p) => p.userId === me && p.id !== except);
+  }
+  async addCyclePeriod(p: CyclePeriodInput) {
+    const v = checkPeriod(p, this.mine());
+    const row: CyclePeriod = { ...v, id: uuid(), userId: this.uid(), createdAt: this.stamp() };
+    this.db.periods.set(row.id, row);
+    this.emitCycle();
+    return { ...row };
+  }
+  async updateCyclePeriod(id: string, p: CyclePeriodInput) {
+    const r = this.db.periods.get(id);
+    if (!r || r.userId !== this.uid()) return;
+    Object.assign(r, checkPeriod(p, this.mine(id)));
+    this.emitCycle();
+  }
+  async deleteCyclePeriod(id: string) {
+    const r = this.db.periods.get(id);
+    if (!r || r.userId !== this.uid()) return;
+    this.db.periods.delete(id);
+    this.emitCycle();
+  }
+  async getCycleSharing() {
+    return !!this.db.cycleShare.get(this.uid());
+  }
+  async setCycleSharing(share: boolean) {
+    this.db.cycleShare.set(this.uid(), !!share);
+    this.emitCycle();
   }
 
   // ---------- Meilensteine ----------

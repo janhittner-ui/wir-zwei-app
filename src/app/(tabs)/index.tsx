@@ -10,9 +10,10 @@ import Svg, { Defs, LinearGradient, Pattern, Rect, Stop } from 'react-native-svg
 
 import { APP_NAME } from '@/config';
 import { usePrefs } from '@/data/prefs';
-import { useApp, useBirthdays, useEvents, useMilestones, usePhotos, useShopping, useTrips } from '@/data/provider';
+import { useApp, useBirthdays, useCyclePeriods, useEvents, useMilestones, usePhotos, useShopping, useTrips } from '@/data/provider';
 import { upcomingBirthdays } from '@/lib/birthdays';
 import { cmpEvent, dayVerse, fullDate, longDay, parse, rel, together, ymd } from '@/lib/dates';
+import { cycleHeadline, cycleInfo } from '@/lib/cycle';
 import { specialDays, specialText } from '@/lib/milestones';
 import { goArea } from '@/lib/nav';
 import { AREA_LABEL, visible, type Area, type HomeCard } from '@/lib/prefs';
@@ -39,6 +40,7 @@ export default function Start() {
     birthday: () => <BirthdayCard key="birthday" />,
     trip: () => <TripCard key="trip" />,
     shopping: () => <ShoppingCard key="shopping" />,
+    cycle: () => <CycleCard key="cycle" />,
   };
 
   return (
@@ -159,6 +161,24 @@ function ShoppingCard() {
       ) : (
         <T v="muted">Alles da. Nichts auf der Liste.</T>
       )}
+    </Card>
+  );
+}
+
+/** Zyklus (in „Anpassen“ einschaltbar): eigener, sonst der geteilte des Partners */
+function CycleCard() {
+  const { profile, couple } = useApp();
+  const { items } = useCyclePeriods();
+  const mine = items.filter((p) => p.userId === profile?.id);
+  const partner = couple?.members.find((m) => m.id !== profile?.id);
+  const theirs = items.filter((p) => partner && p.userId === partner.id);
+  const own = mine.length > 0 || !theirs.length;
+  const info = cycleInfo(own ? mine : theirs);
+  return (
+    <Card>
+      <CardHead title={own ? 'Zyklus' : `Zyklus von ${partner?.displayName}`} action={<Button kind="link" title="Öffnen" onPress={() => goArea('kalender', { seg: 'zyklus' })} />} />
+      <T v="big" testID="start-cycle">{cycleHeadline(info)}</T>
+      {info.fertileNow && !info.ongoingDay ? <T v="muted">Fruchtbare Tage (geschätzt)</T> : null}
     </Card>
   );
 }
