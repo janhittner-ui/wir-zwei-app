@@ -154,6 +154,28 @@ export interface CyclePeriod {
 }
 export type CyclePeriodInput = Pick<CyclePeriod, 'start' | 'end'>;
 
+/** Restaurant: besucht (mit Datum) oder auf der „Wollen wir hin“-Liste */
+export interface Restaurant {
+  id: string;
+  name: string;
+  /** Küche, z. B. Italienisch */
+  cuisine: string | null;
+  /** Ort oder Adresse */
+  place: string | null;
+  /** 1–4 (€ bis €€€€) */
+  price: number | null;
+  note: string | null;
+  /** ISO-Datum des (letzten) Besuchs; null = wollen wir hin */
+  visitedOn: string | null;
+  /** Foto aus dem Album (nur wenn besucht) */
+  photoId: string | null;
+  /** Sterne pro Person (nur wenn besucht) */
+  ratings: { userId: string; stars: number }[];
+  createdBy: string | null;
+  createdAt: string;
+}
+export type RestaurantInput = Pick<Restaurant, 'name' | 'cuisine' | 'place' | 'price' | 'note' | 'visitedOn' | 'photoId'>;
+
 export type DateCategory = 'zuhause' | 'draussen' | 'essen' | 'kultur' | 'aktiv' | 'ausflug' | 'sonstiges';
 /** Idee auf der gemeinsamen Date-Liste; erledigt, sobald es ein Datum gibt */
 export interface DateIdea {

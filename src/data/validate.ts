@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, DateIdeaInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, CyclePeriodInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, DateIdeaInput, RestaurantInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, CyclePeriodInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -292,6 +292,35 @@ export function checkDateIdea(d: DateIdeaInput, now = new Date()): DateIdeaInput
   } else doneOn = null;
   const photoId = doneOn && d.photoId && UUID_RE.test(d.photoId) ? d.photoId : null;
   return { title, category, note, doneOn, photoId };
+}
+
+/** Restaurant: Name, Küche, Ort, Preis 1–4, Notiz; besucht mit Datum (nicht in der Zukunft), Foto nur wenn besucht */
+export function checkRestaurant(r: RestaurantInput, now = new Date()): RestaurantInput {
+  const name = clean(r.name);
+  if (!name) throw new InputError('Wie heißt das Restaurant?');
+  if (name.length > 80) throw new InputError('Der Name darf höchstens 80 Zeichen haben.');
+  const cuisine = optional(r.cuisine);
+  if (cuisine && cuisine.length > 40) throw new InputError('Die Küche darf höchstens 40 Zeichen haben.');
+  const place = optional(r.place);
+  if (place && place.length > 120) throw new InputError('Der Ort darf höchstens 120 Zeichen haben.');
+  const price = r.price == null ? null : Number(r.price);
+  if (price !== null && (!Number.isInteger(price) || price < 1 || price > 4)) throw new InputError('Preis bitte mit 1 bis 4 €.');
+  const note = (r.note ?? '').trim() || null;
+  if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
+  let visitedOn = (r.visitedOn ?? '').trim() || null;
+  if (visitedOn) {
+    if (!isoOk(visitedOn)) throw new InputError('Bitte ein gültiges Datum wählen.');
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    if (visitedOn < '1900-01-01' || new Date(`${visitedOn}T00:00:00`) > tomorrow) throw new InputError('Das Datum liegt in der Zukunft.');
+  } else visitedOn = null;
+  const photoId = visitedOn && r.photoId && UUID_RE.test(r.photoId) ? r.photoId : null;
+  return { name, cuisine, place, price, note, visitedOn, photoId };
+}
+
+export function checkStars(stars: number | null): number | null {
+  if (stars == null) return null;
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new InputError('Bewertung bitte mit 1 bis 5 Sternen.');
+  return stars;
 }
 
 const isoOk = (s: string) => {

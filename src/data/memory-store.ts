@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, DateIdea, DateIdeaInput, Restaurant, RestaurantInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkDateIdea, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkTrip, checkTripItem, checkCaption, checkPhoto, checkMedia, checkGift, checkPrefs, checkQuizAnswer, checkMilestone, checkDateIdea, checkRestaurant, checkStars, checkPeriod, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -35,6 +35,7 @@ type GiftRow = Gift & { coupleId: string };
 type QuizRow = QuizAnswer & { coupleId: string };
 type MilestoneRow = Milestone & { coupleId: string };
 type DateRow = DateIdea & { coupleId: string };
+type RestaurantRow = Omit<Restaurant, 'ratings'> & { coupleId: string; ratings: Map<string, number> };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -56,6 +57,7 @@ export class MemoryBackend {
   quiz = new Map<string, QuizRow>();
   milestones = new Map<string, MilestoneRow>();
   dates = new Map<string, DateRow>();
+  restaurants = new Map<string, RestaurantRow>();
   periods = new Map<string, CyclePeriod>();
   cycleShare = new Map<string, boolean>(); // userId -> teilt mit Partner
   prefs = new Map<string, Record<string, unknown>>(); // userId -> Einstellungen
@@ -220,6 +222,7 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.media) if (v.coupleId === cid) this.db.media.delete(k);
       for (const [k, v] of this.db.gifts) if (v.coupleId === cid) this.db.gifts.delete(k);
       for (const [k, v] of this.db.dates) if (v.coupleId === cid) this.db.dates.delete(k);
+      for (const [k, v] of this.db.restaurants) if (v.coupleId === cid) this.db.restaurants.delete(k);
       for (const [k, v] of this.db.photos) if (v.coupleId === cid) {
         this.db.photos.delete(k);
         this.db.files.delete(v.path);
@@ -247,6 +250,7 @@ export class MemoryStore implements DataStore {
     for (const r of this.db.media.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.milestones.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.dates.values()) if (r.createdBy === me) r.createdBy = null;
+    for (const r of this.db.restaurants.values()) if (r.createdBy === me) r.createdBy = null;
     for (const r of this.db.quiz.values()) {
       if (r.createdBy === me) r.createdBy = null;
       if (r.player === me) r.player = null;
@@ -504,9 +508,11 @@ export class MemoryStore implements DataStore {
     this.db.files.delete(r.path);
     for (const m of this.db.milestones.values()) if (m.photoId === id) m.photoId = null;
     for (const d of this.db.dates.values()) if (d.photoId === id) d.photoId = null;
+    for (const d of this.db.restaurants.values()) if (d.photoId === id) d.photoId = null;
     this.db.emit('photos', r.coupleId);
     this.db.emit('milestones', r.coupleId);
     this.db.emit('dates', r.coupleId);
+    this.db.emit('restaurants', r.coupleId);
   }
   async photoUrls(photos: Photo[]) {
     const cid = this.coupleId();
@@ -644,6 +650,60 @@ export class MemoryStore implements DataStore {
   async setCycleSharing(share: boolean) {
     this.db.cycleShare.set(this.uid(), !!share);
     this.emitCycle();
+  }
+
+  // ---------- Restaurants ----------
+  private ownRestaurant(id: string) {
+    const r = this.db.restaurants.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  private pubRestaurant({ coupleId, ratings, ...r }: RestaurantRow): Restaurant {
+    // wie die Datenbank: Sterne von Personen, die nicht mehr im Paar sind, gibt es nicht
+    const members = this.db.membersOf(coupleId);
+    return { ...r, ratings: [...ratings].filter(([u]) => members.includes(u)).map(([userId, stars]) => ({ userId, stars })) };
+  }
+  async listRestaurants() {
+    const cid = this.coupleId();
+    return [...this.db.restaurants.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((r) => this.pubRestaurant(r));
+  }
+  async addRestaurant(r: RestaurantInput) {
+    const cid = this.coupleId();
+    const v = checkRestaurant(r);
+    if (v.photoId && this.db.photos.get(v.photoId)?.coupleId !== cid) fail('restaurant_photo_invalid');
+    const row: RestaurantRow = { ...v, id: uuid(), coupleId: cid, ratings: new Map(), createdBy: this.uid(), createdAt: this.stamp() };
+    this.db.restaurants.set(row.id, row);
+    this.db.emit('restaurants', cid);
+    return this.pubRestaurant(row);
+  }
+  async updateRestaurant(id: string, r: RestaurantInput) {
+    const row = this.ownRestaurant(id);
+    if (!row) return;
+    const v = checkRestaurant(r);
+    if (v.photoId && v.photoId !== row.photoId && this.db.photos.get(v.photoId)?.coupleId !== row.coupleId) fail('restaurant_photo_invalid');
+    if (!v.visitedOn) row.ratings.clear();
+    Object.assign(row, v);
+    this.db.emit('restaurants', row.coupleId);
+  }
+  async deleteRestaurant(id: string) {
+    const row = this.ownRestaurant(id);
+    if (!row) return;
+    this.db.restaurants.delete(id);
+    this.db.emit('restaurants', row.coupleId);
+  }
+  async rateRestaurant(id: string, stars: number | null) {
+    const s = checkStars(stars);
+    const row = this.ownRestaurant(id);
+    if (!row) {
+      if (s != null) fail('restaurant_mismatch');
+      return;
+    }
+    if (s == null) row.ratings.delete(this.uid());
+    else {
+      if (!row.visitedOn) fail('restaurant_not_visited');
+      row.ratings.set(this.uid(), s);
+    }
+    this.db.emit('restaurants', row.coupleId);
   }
 
   // ---------- Date-Liste ----------

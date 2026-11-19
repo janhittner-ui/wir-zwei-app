@@ -7,7 +7,7 @@ import { AppState } from 'react-native';
 
 import { createStore } from './index';
 import type { DataStore } from './store';
-import type { Birthday, CalendarEvent, Gift, QuizAnswer, Milestone, DateIdea, CyclePeriod, Media, Note, Photo, Recipe, Trip, TripItem, Couple, Profile, Session, ShoppingItem } from './types';
+import type { Birthday, CalendarEvent, Gift, QuizAnswer, Milestone, DateIdea, Restaurant, CyclePeriod, Media, Note, Photo, Recipe, Trip, TripItem, Couple, Profile, Session, ShoppingItem } from './types';
 
 type Status = 'booting' | 'signedOut' | 'loading' | 'needsProfile' | 'needsCouple' | 'ready' | 'error';
 
@@ -99,7 +99,7 @@ export function useApp(): AppData {
 }
 
 /** Lädt eine Liste, hört auf Live-Änderungen und lädt beim Zurückkehren in die App neu. */
-function useLiveList<T>(table: 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'dates' | 'cycle', fetcher: (s: DataStore) => Promise<T[]>) {
+function useLiveList<T>(table: 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'dates' | 'restaurants' | 'cycle', fetcher: (s: DataStore) => Promise<T[]>) {
   const { store, status } = useApp();
   const [items, setItems] = useState<T[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -145,6 +145,7 @@ export const usePhotos = () => useLiveList<Photo>('photos', (s) => s.listPhotos(
 export const useMedia = () => useLiveList<Media>('media', (s) => s.listMedia());
 export const useGifts = () => useLiveList<Gift>('gifts', (s) => s.listGifts());
 export const useQuizAnswers = () => useLiveList<QuizAnswer>('quiz', (s) => s.listQuizAnswers());
+export const useRestaurants = () => useLiveList<Restaurant>('restaurants', (s) => s.listRestaurants());
 export const useDateIdeas = () => useLiveList<DateIdea>('dates', (s) => s.listDateIdeas());
 export const useMilestones = () => useLiveList<Milestone>('milestones', (s) => s.listMilestones());
 /** Eigene Perioden und die des Partners, falls geteilt */

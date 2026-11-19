@@ -1,20 +1,51 @@
-/** Rezepte: eure gemeinsame Rezeptsammlung. Liste wie in iOS, mit Suche und Favoriten. */
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+/** Essen: Reiter Rezepte (gemeinsame Sammlung mit Suche und Favoriten) und Restaurants (wollen wir hin / waren wir, mit Sternen). */
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { usePrefs } from '@/data/prefs';
-import { useRecipes } from '@/data/provider';
+import { useRecipes, useRestaurants } from '@/data/provider';
 import type { Recipe } from '@/data/types';
 import { searchKey } from '@/lib/birthdays';
 import { formatMinutes } from '@/lib/recipe';
 import { fonts, useTheme } from '@/theme';
 import { IconHeart, IconPlus, IconRight, IconX } from '@/ui/icons';
 import { Banner, Button, Card, Input, Press, Screen, Segmented, T } from '@/ui/kit';
+import { RestaurantsView } from '@/ui/restaurants-view';
 
 type Seg = 'alle' | 'fav';
+type Tab = 'rezepte' | 'restaurants';
 
-export default function Rezepte() {
+export default function Essen() {
+  const t = useTheme();
+  const params = useLocalSearchParams<{ seg?: string }>();
+  const [tab, setTab] = useState<Tab>(params.seg === 'restaurants' ? 'restaurants' : 'rezepte');
+  useEffect(() => {
+    if (params.seg === 'restaurants' || params.seg === 'rezepte') setTab(params.seg);
+  }, [params.seg]);
+  const { items: recipes } = useRecipes();
+  const { items: places } = useRestaurants();
+  const add = () => router.push(tab === 'rezepte' ? '/rezept-bearbeiten' : '/restaurant');
+  const count = tab === 'rezepte'
+    ? (recipes.length === 1 ? '1 Rezept' : `${recipes.length} Rezepte`)
+    : (places.length === 1 ? '1 Restaurant' : `${places.length} Restaurants`);
+
+  return (
+    <Screen>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <View>
+          <T v="eyebrow">{count}</T>
+          <T v="display">Essen</T>
+        </View>
+        <Button small title={tab === 'rezepte' ? 'Rezept' : 'Restaurant'} icon={<IconPlus color={t.onAccent} size={18} />} onPress={add} testID={tab === 'rezepte' ? 'add-recipe' : 'add-restaurant'} />
+      </View>
+      <Segmented<Tab> value={tab} onChange={setTab} options={[{ key: 'rezepte', label: 'Rezepte' }, { key: 'restaurants', label: 'Restaurants' }]} />
+      {tab === 'rezepte' ? <RecipesView /> : <RestaurantsView />}
+    </Screen>
+  );
+}
+
+function RecipesView() {
   const t = useTheme();
   const { items, loaded, error } = useRecipes();
   const [q, setQ] = useState('');
@@ -32,14 +63,7 @@ export default function Rezepte() {
   const add = () => router.push('/rezept-bearbeiten');
 
   return (
-    <Screen>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <View>
-          <T v="eyebrow">{recipes.length === 1 ? '1 Rezept' : `${recipes.length} Rezepte`}</T>
-          <T v="display">Rezepte</T>
-        </View>
-        <Button small title="Rezept" icon={<IconPlus color={t.onAccent} size={18} />} onPress={add} testID="add-recipe" />
-      </View>
+    <>
       {error ? <Banner warn>Rezepte konnten gerade nicht geladen werden.</Banner> : null}
 
       {recipes.length > 3 ? (
@@ -70,7 +94,7 @@ export default function Rezepte() {
           <Button small title="Erstes Rezept" onPress={add} />
         </View>
       ) : null}
-    </Screen>
+    </>
   );
 }
 

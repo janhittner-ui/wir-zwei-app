@@ -17,7 +17,8 @@ import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } 
 import type { Trip } from '../src/data/types';
 import { base64ToBytes } from '../src/lib/base64';
 import { cycleHeadline, cycleInfo, cycleMarks } from '../src/lib/cycle';
-import { checkDateIdea, checkPeriod } from '../src/data/validate';
+import { checkDateIdea, checkPeriod, checkRestaurant, checkStars } from '../src/data/validate';
+import { avgStars, dateTitleFor, priceText, restaurantSub, splitRestaurants, starsText } from '../src/lib/restaurants';
 import { DATE_CATEGORY, DATE_SUGGESTIONS, openSuggestions, pickKey, randomDate, splitDates } from '../src/lib/date-ideas';
 import { dots, specialDays, specialText, sortTimeline } from '../src/lib/milestones';
 import { questionOrder, questionText, quizState } from '../src/lib/quiz';
@@ -786,5 +787,71 @@ describe('Date-Liste', () => {
     assert.equal((await b.listDateIdeas())[0].doneOn, null);
     await b.deleteDateIdea(d.id);
     assert.equal((await a.listDateIdeas()).length, 0);
+  });
+});
+
+describe('Restaurants', () => {
+  const rest = (id: string, name: string, visitedOn: string | null, stars: number[] = []) =>
+    ({ id, name, cuisine: null, place: null, price: null, note: null, visitedOn, photoId: null, ratings: stars.map((s, i) => ({ userId: `u${i}`, stars: s })), createdBy: null, createdAt: `2026-01-0${id.length}T00:00:00Z` });
+
+  test('Durchschnitt, Preis, Sortierung', () => {
+    assert.equal(avgStars(rest('a', 'A', '2026-01-01')), null);
+    assert.equal(avgStars(rest('a', 'A', '2026-01-01', [4, 5])), 4.5);
+    assert.equal(avgStars(rest('a', 'A', '2026-01-01', [3, 4, 4])), 3.5);
+    assert.equal(starsText(4.5), '4,5');
+    assert.equal(priceText(3), '€€€');
+    assert.equal(restaurantSub({ cuisine: 'Italienisch', place: 'Köln', price: 2 }), 'Italienisch · Köln · €€');
+    const { wish, visited } = splitRestaurants([rest('a', 'Gut', '2026-01-01', [4]), rest('bb', 'Wunsch', null), rest('ccc', 'Top', '2025-05-01', [5, 5]), rest('dddd', 'Neu', '2026-02-01')]);
+    assert.deepEqual(wish.map((r) => r.id), ['bb']);
+    assert.deepEqual(visited.map((r) => r.name), ['Top', 'Gut', 'Neu']);
+    assert.equal(dateTitleFor('Da Mario'), 'Essen gehen: Da Mario');
+    assert.ok(dateTitleFor('x'.repeat(100)).length <= 80);
+  });
+
+  test('Eingaben prüfen', () => {
+    const now = new Date(2026, 10, 19);
+    const base = { name: 'Da Mario', cuisine: null, place: null, price: null, note: null, visitedOn: null, photoId: null };
+    assert.throws(() => checkRestaurant({ ...base, name: ' ' }), /Wie heißt/);
+    assert.throws(() => checkRestaurant({ ...base, price: 5 }), /1 bis 4/);
+    assert.throws(() => checkRestaurant({ ...base, visitedOn: '2026-12-24' }, now), /Zukunft/);
+    assert.equal(checkRestaurant({ ...base, cuisine: '  ' }).cuisine, null);
+    assert.equal(checkRestaurant({ ...base, photoId: '0f8c2f0a-1b2c-4d3e-8f90-123456789abc' }, now).photoId, null);
+    assert.throws(() => checkStars(0), /1 bis 5/);
+    assert.equal(checkStars(null), null);
+  });
+
+  test('Mock-DB: eigene Sterne pro Person, nur wenn besucht, Fremde sehen nichts', async () => {
+    const db = new MemoryBackend();
+    const a = new MemoryStore(db);
+    const b = new MemoryStore(db);
+    const c = new MemoryStore(db);
+    await login(a, 'r1@example.org');
+    await login(b, 'r2@example.org');
+    await login(c, 'r3@example.org');
+    for (const [s, n] of [[a, 'A'], [b, 'B'], [c, 'C']] as const) await s.saveMyProfile({ displayName: n, color: 'blue' });
+    await a.createCouple();
+    await b.joinCouple(await a.createInvite());
+    await c.createCouple();
+    const r = await a.addRestaurant({ name: ' Da  Mario ', cuisine: 'Italienisch', place: 'Köln', price: 2, note: null, visitedOn: null, photoId: null });
+    assert.equal(r.name, 'Da Mario');
+    await assert.rejects(() => a.rateRestaurant(r.id, 4), /restaurant_not_visited/);
+    await b.updateRestaurant(r.id, { ...r, visitedOn: '2026-11-01' });
+    await a.rateRestaurant(r.id, 4);
+    await b.rateRestaurant(r.id, 5);
+    await a.rateRestaurant(r.id, 3);
+    const [got] = await b.listRestaurants();
+    assert.equal(got.ratings.length, 2);
+    assert.equal(avgStars(got), 4);
+    assert.equal((await c.listRestaurants()).length, 0);
+    await assert.rejects(() => c.rateRestaurant(r.id, 1), /restaurant_mismatch/);
+    await c.deleteRestaurant(r.id);
+    // eigene Sterne entfernen
+    await b.rateRestaurant(r.id, null);
+    assert.equal((await a.listRestaurants())[0].ratings.length, 1);
+    // zurück auf "wollen wir hin" löscht die Sterne
+    await a.updateRestaurant(r.id, { ...got, visitedOn: null });
+    assert.equal((await b.listRestaurants())[0].ratings.length, 0);
+    await a.deleteRestaurant(r.id);
+    assert.equal((await b.listRestaurants()).length, 0);
   });
 });

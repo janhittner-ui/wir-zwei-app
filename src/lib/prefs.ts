@@ -8,7 +8,7 @@
 
 export const AREAS = ['kalender', 'listen', 'rezepte', 'album', 'quiz'] as const;
 export type Area = (typeof AREAS)[number];
-export const AREA_LABEL: Record<Area, string> = { kalender: 'Kalender', listen: 'Listen', rezepte: 'Rezepte', album: 'Album', quiz: 'Quiz' };
+export const AREA_LABEL: Record<Area, string> = { kalender: 'Kalender', listen: 'Listen', rezepte: 'Essen', album: 'Album', quiz: 'Quiz' };
 /** Bereiche, die nach der ersten Version von „Anpassen“ dazukamen */
 const LATER_AREAS: readonly Area[] = ['quiz'];
 /** Neben Start passen höchstens 4 Bereiche in die Tab-Leiste (iPhone zeigt 5 Tabs) */

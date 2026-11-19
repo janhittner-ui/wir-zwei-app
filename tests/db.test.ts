@@ -384,6 +384,42 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(null, 'select * from public.date_ideas', /permission denied/);
   });
 
+  test('Restaurants: Paar teilt sie, jede Person eigene Sterne, nur wenn ihr dort wart', async () => {
+    const [ph] = await as<{ id: string }>(A, `insert into public.photos (couple_id, width, height) values ($1, 800, 600) returning id`, [couple]);
+    const [r] = await as<{ id: string }>(A, `insert into public.restaurants (couple_id, name, cuisine, place, price) values ($1, 'Da Mario', 'Italienisch', 'Köln', 2) returning id`, [couple]);
+    assert.equal((await as(B, 'select * from public.restaurants')).length, 1);
+    // Sterne erst, wenn ihr dort wart
+    await fails(A, `insert into public.restaurant_ratings (restaurant_id, couple_id, stars) values ($1, $2, 4)`, /restaurant_not_visited/, [r.id, couple]);
+    await fails(A, `update public.restaurants set photo_id = $2 where id = $1`, /check constraint/, [r.id, ph.id]);
+    await as(B, `update public.restaurants set visited_on = current_date, photo_id = $2 where id = $1`, [r.id, ph.id]);
+    await as(A, `insert into public.restaurant_ratings (restaurant_id, couple_id, stars) values ($1, $2, 4)`, [r.id, couple]);
+    await as(B, `insert into public.restaurant_ratings (restaurant_id, couple_id, stars) values ($1, $2, 5)`, [r.id, couple]);
+    assert.equal((await as(A, 'select * from public.restaurant_ratings')).length, 2);
+    // nur eigene Sterne ändern oder löschen
+    assert.equal((await as(B, `update public.restaurant_ratings set stars = 1 where user_id = $1 returning stars`, [A])).length, 0);
+    assert.equal((await as(B, `delete from public.restaurant_ratings where user_id = $1 returning stars`, [A])).length, 0);
+    await fails(B, `insert into public.restaurant_ratings (restaurant_id, user_id, couple_id, stars) values ($1, $2, $3, 1)`, /row-level security|duplicate key/, [r.id, A, couple]);
+    await fails(A, `update public.restaurant_ratings set user_id = $1`, /permission denied/, [B]);
+    await as(A, `update public.restaurant_ratings set stars = 3 where user_id = $1`, [A]);
+    await fails(A, `update public.restaurant_ratings set stars = 6 where user_id = $1`, /check constraint/, [A]);
+    await fails(A, `insert into public.restaurants (couple_id, name, price) values ($1, 'X', 5)`, /check constraint/, [couple]);
+    await fails(A, `insert into public.restaurants (couple_id, name) values ($1, '  ')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.restaurants (couple_id, name, visited_on, photo_id) values ($1, 'X', current_date, gen_random_uuid())`, /restaurant_photo_invalid/, [couple]);
+    // Fremde: nichts sehen, nichts bewerten
+    assert.equal((await as(C, 'select * from public.restaurants')).length, 0);
+    assert.equal((await as(C, 'select * from public.restaurant_ratings')).length, 0);
+    const [own] = await as<{ c: string }>(C, 'select public.my_couple_id() as c');
+    await fails(C, `insert into public.restaurant_ratings (restaurant_id, couple_id, stars) values ($1, $2, 1)`, /row-level security|restaurant_mismatch/, [r.id, own.c ?? couple]);
+    await fails(C, `insert into public.restaurants (couple_id, name) values ($1, 'Einbruch')`, /row-level security/, [couple]);
+    await fails(null, 'select * from public.restaurant_ratings', /permission denied/);
+    // Foto löschen lässt Restaurant stehen; zurück auf "wollen wir hin" löscht die Sterne
+    await as(A, `delete from public.photos where id = $1`, [ph.id]);
+    await as(A, `update public.restaurants set visited_on = null where id = $1`, [r.id]);
+    assert.equal((await as(B, 'select * from public.restaurant_ratings')).length, 0);
+    await as(A, `update public.restaurants set visited_on = current_date where id = $1`, [r.id]);
+    await as(B, `insert into public.restaurant_ratings (restaurant_id, couple_id, stars) values ($1, $2, 5)`, [r.id, couple]);
+  });
+
   test('Quiz: Paar teilt Antworten, jede Frage einmal pro Runde, Spieler muss zum Paar gehören', async () => {
     await as(A, `insert into public.quiz_answers (couple_id, question_id, player, answer) values ($1, 'lieblingsessen', $2, 'Lasagne')`, [couple, A]);
     await as(B, `insert into public.quiz_answers (couple_id, question_id, player) values ($1, 'traumreise', $2)`, [couple, B]);
@@ -428,6 +464,8 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal((await db.query('select * from public.user_prefs where user_id = $1', [B])).rows.length, 0);
     assert.equal((await db.query('select * from public.cycle_periods where user_id = $1', [B])).rows.length, 0);
     assert.equal((await db.query('select * from public.cycle_settings where user_id = $1', [B])).rows.length, 0);
+    assert.equal((await db.query('select * from public.restaurant_ratings where user_id = $1', [B])).rows.length, 0);
+    assert.equal((await as(A, 'select * from public.restaurants')).length, 1);
     const evs = await as<{ who: string | null }>(A, 'select * from public.events');
     assert.equal(evs.length, 1);
     assert.equal(evs[0].who, null);
@@ -446,7 +484,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
-      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) + (select count(*) from public.quiz_answers) + (select count(*) from public.milestones) + (select count(*) from public.date_ideas) +
+      (select count(*) from public.recipes) + (select count(*) from public.trips) + (select count(*) from public.trip_items) + (select count(*) from public.photos) + (select count(*) from public.media) + (select count(*) from public.gifts) + (select count(*) from public.quiz_answers) + (select count(*) from public.milestones) + (select count(*) from public.date_ideas) + (select count(*) from public.restaurants) + (select count(*) from public.restaurant_ratings) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });
