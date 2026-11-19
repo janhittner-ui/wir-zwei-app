@@ -2,3 +2,11 @@
 export const APP_NAME = 'Paarweise';
 /** Für das Schriftzug-Logo: erster Teil blau, zweiter Teil rosa. */
 export const APP_NAME_PARTS = ['Paar', 'weise'] as const;
+
+/**
+ * Rechtstexte im Netz (GitHub Pages, Quelle: Ordner website/, veröffentlicht per .github/workflows/webseite.yml).
+ * Bei eigener Domain nur LEGAL_BASE ändern.
+ */
+export const LEGAL_BASE = 'https://janhittner-ui.github.io/wir-zwei-app';
+export const PRIVACY_URL = `${LEGAL_BASE}/datenschutz.html`;
+export const IMPRINT_URL = `${LEGAL_BASE}/impressum.html`;

@@ -1,9 +1,9 @@
 /** Einstellungen: euer Paar, dein Profil, Datenschutz, Abmelden und Konto löschen. */
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Platform, View } from 'react-native';
 
-import { APP_NAME } from '@/config';
+import { APP_NAME, IMPRINT_URL, PRIVACY_URL } from '@/config';
 import { friendlyError } from '@/data/errors';
 import { useApp } from '@/data/provider';
 import type { PersonColor } from '@/data/types';
@@ -154,6 +154,23 @@ export default function Einstellungen() {
             der EU und sind nur für euch beide sichtbar. Es gibt keine Werbung, kein Tracking und keine Weitergabe an Dritte.
           </T>
           {store.kind === 'demo' ? <Banner>Demo-Modus: Es wird gerade gar nichts gespeichert.</Banner> : null}
+          <Divider />
+          {[
+            { title: 'Datenschutzerklärung', url: PRIVACY_URL, id: 'privacy-link' },
+            { title: 'Impressum', url: IMPRINT_URL, id: 'imprint-link' },
+          ].map((l) => (
+            <Press
+              key={l.id}
+              testID={l.id}
+              accessibilityRole="link"
+              scale={0.99}
+              onPress={() => Linking.openURL(l.url)}
+              style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }}
+            >
+              <T style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 16, color: t.blue }}>{l.title}</T>
+              <IconRight color={t.lineStrong} size={16} />
+            </Press>
+          ))}
         </Card>
 
         <Card>
