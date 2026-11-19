@@ -14,10 +14,12 @@ const LATER_AREAS: readonly Area[] = ['quiz'];
 /** Neben Start passen höchstens 4 Bereiche in die Tab-Leiste (iPhone zeigt 5 Tabs) */
 export const MAX_TABS = 4;
 
-export const HOME_CARDS = ['hero', 'verse', 'upcoming', 'birthday', 'trip', 'shopping'] as const;
+export const HOME_CARDS = ['hero', 'verse', 'upcoming', 'birthday', 'trip', 'shopping', 'cycle'] as const;
+/** Karten, die später dazukamen und erst einmal aus sind (Zyklus ist privat: nur wer will, zeigt ihn) */
+const LATER_HOME: readonly HomeCard[] = ['cycle'];
 export type HomeCard = (typeof HOME_CARDS)[number];
 export const HOME_LABEL: Record<HomeCard, string> = {
-  hero: 'Paar-Bild', verse: 'Tagesvers', upcoming: 'Demnächst', birthday: 'Nächster Geburtstag', trip: 'Nächste Reise', shopping: 'Einkauf',
+  hero: 'Paar-Bild', verse: 'Tagesvers', upcoming: 'Demnächst', birthday: 'Nächster Geburtstag', trip: 'Nächste Reise', shopping: 'Einkauf', cycle: 'Zyklus',
 };
 
 export const LIST_SEGS = ['einkauf', 'notizen', 'filme', 'geschenke'] as const;
@@ -43,17 +45,17 @@ export interface Prefs {
   home: Ordered<HomeCard> & { heroPhotoId: string | null };
   look: { mode: Mode; accent: AccentKey };
   lists: Ordered<ListSeg>;
-  kalender: { showBirthdays: boolean };
+  kalender: { showBirthdays: boolean; showCycle: boolean; cycleInMonth: boolean };
   rezepte: { sort: RecipeSort };
   album: { cols: 3 | 4 };
 }
 
 export const DEFAULT_PREFS: Prefs = {
   areas: { order: [...AREAS], hidden: ['quiz'] },
-  home: { order: [...HOME_CARDS], hidden: [], heroPhotoId: null },
+  home: { order: [...HOME_CARDS], hidden: ['cycle'], heroPhotoId: null },
   look: { mode: 'system', accent: 'blau' },
   lists: { order: [...LIST_SEGS], hidden: [] },
-  kalender: { showBirthdays: true },
+  kalender: { showBirthdays: true, showCycle: true, cycleInMonth: true },
   rezepte: { sort: 'name' },
   album: { cols: 3 },
 };
@@ -67,12 +69,11 @@ function ordered<K extends string>(all: readonly K[], v: unknown, minVisible = 0
   const o = obj(v);
   const order = keys(all, o.order);
   let hidden = keys(all, o.hidden);
-  const known = order.length > 0;
   for (const k of all) {
     if (order.includes(k)) continue;
     order.push(k);
     // später dazugekommene Bereiche erst einmal nicht in die Tab-Leiste
-    if (known && later.includes(k) && !hidden.includes(k)) hidden.push(k);
+    if (later.includes(k) && !hidden.includes(k)) hidden.push(k);
   }
   if (all.length - hidden.length < minVisible) hidden = [];
   for (const k of [...order].reverse()) {
@@ -93,10 +94,14 @@ export function normalizePrefs(raw: unknown): Prefs {
   const alb = obj(r.album);
   return {
     areas: ordered(AREAS, r.areas, 0, MAX_TABS, LATER_AREAS),
-    home: { ...ordered(HOME_CARDS, home), heroPhotoId: typeof home.heroPhotoId === 'string' && UUID.test(home.heroPhotoId) ? home.heroPhotoId : null },
+    home: { ...ordered(HOME_CARDS, home, 0, Infinity, LATER_HOME), heroPhotoId: typeof home.heroPhotoId === 'string' && UUID.test(home.heroPhotoId) ? home.heroPhotoId : null },
     look: { mode: pick(['system', 'light', 'dark'] as const, look.mode, 'system'), accent: pick(ACCENTS, look.accent, 'blau') },
     lists: ordered(LIST_SEGS, r.lists, 1),
-    kalender: { showBirthdays: typeof kal.showBirthdays === 'boolean' ? kal.showBirthdays : true },
+    kalender: {
+      showBirthdays: typeof kal.showBirthdays === 'boolean' ? kal.showBirthdays : true,
+      showCycle: typeof kal.showCycle === 'boolean' ? kal.showCycle : true,
+      cycleInMonth: typeof kal.cycleInMonth === 'boolean' ? kal.cycleInMonth : true,
+    },
     rezepte: { sort: pick(['name', 'neu'] as const, rez.sort, 'name') },
     album: { cols: alb.cols === 4 ? 4 : 3 },
   };

@@ -1,9 +1,9 @@
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, Trip, TripInput, TripItem, Photo, PhotoUpload, Media, MediaInput, Gift, GiftInput, QuizAnswer, QuizAnswerInput, Milestone, MilestoneInput, CyclePeriod, CyclePeriodInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 
 export type Unsubscribe = () => void;
-export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'couple';
+export type LiveTable = 'events' | 'shopping' | 'birthdays' | 'notes' | 'recipes' | 'trips' | 'photos' | 'media' | 'gifts' | 'quiz' | 'milestones' | 'cycle' | 'couple';
 
 /**
  * Die eine Schnittstelle, über die die App mit Daten spricht.
@@ -97,6 +97,15 @@ export interface DataStore {
   updateGift(id: string, g: GiftInput): Promise<void>;
   setGiftDone(id: string, done: boolean): Promise<void>;
   deleteGift(id: string): Promise<void>;
+
+  // Zyklus: nur eigene Einträge, dazu die des Partners, falls er/sie Teilen eingeschaltet hat
+  listCyclePeriods(): Promise<CyclePeriod[]>;
+  addCyclePeriod(p: CyclePeriodInput): Promise<CyclePeriod>;
+  updateCyclePeriod(id: string, p: CyclePeriodInput): Promise<void>;
+  deleteCyclePeriod(id: string): Promise<void>;
+  /** Eigener Schalter „mit dem Partner teilen“ (Standard: aus) */
+  getCycleSharing(): Promise<boolean>;
+  setCycleSharing(share: boolean): Promise<void>;
 
   // Meilensteine (Zeitleiste, älteste zuerst)
   listMilestones(): Promise<Milestone[]>;

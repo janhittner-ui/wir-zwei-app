@@ -94,6 +94,7 @@ function Root() {
           <Stack.Screen name="anpassen" options={{ presentation: 'modal' }} />
           <Stack.Screen name="meilensteine" />
           <Stack.Screen name="meilenstein" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="periode" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bereich/[key]" />
         </Stack.Protected>
       </Stack>

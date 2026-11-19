@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, CyclePeriodInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -272,4 +272,39 @@ export function checkMilestone(m: MilestoneInput, now = new Date()): MilestoneIn
   if (note && note.length > 500) throw new InputError('Die Notiz darf höchstens 500 Zeichen haben.');
   const photoId = m.photoId && UUID_RE.test(m.photoId) ? m.photoId : null;
   return { title, icon, date, note, photoId };
+}
+
+const isoOk = (s: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(`${s}T12:00:00`);
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+};
+const addDaysIso = (iso: string, n: number) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const x = new Date(y, m - 1, d + n);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+};
+
+/**
+ * Periode: Beginn nicht in der Zukunft, Ende (falls schon vorbei) frühestens am Beginn und höchstens 20 Tage danach.
+ * others = bereits eingetragene Perioden derselben Person (ohne die gerade bearbeitete): keine Überschneidung.
+ */
+export function checkPeriod(p: CyclePeriodInput, others: CyclePeriodInput[] = [], now = new Date()): CyclePeriodInput {
+  const start = (p.start ?? '').trim();
+  if (!isoOk(start)) throw new InputError('Bitte ein gültiges Datum für den Beginn wählen.');
+  const todayIso = addDaysIso(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`, 0);
+  if (start > todayIso) throw new InputError('Der Beginn kann nicht in der Zukunft liegen.');
+  if (start < '2000-01-01') throw new InputError('Das Datum liegt zu weit zurück.');
+  const end = p.end ? p.end.trim() : null;
+  if (end !== null) {
+    if (!isoOk(end)) throw new InputError('Bitte ein gültiges Datum für das Ende wählen.');
+    if (end < start) throw new InputError('Das Ende kann nicht vor dem Beginn liegen.');
+    if (end > addDaysIso(start, 20)) throw new InputError('Eine Periode kann hier höchstens 21 Tage dauern.');
+  }
+  for (const o of others) {
+    const oEnd = o.end ?? addDaysIso(o.start, 6);
+    const myEnd = end ?? start;
+    if (start <= oEnd && myEnd >= o.start) throw new InputError('Für diese Tage ist schon eine Periode eingetragen.');
+  }
+  return { start, end };
 }

@@ -16,6 +16,8 @@ import { VERSES } from '../src/lib/verses';
 import { groupTrips, nextTrip, tripCountdown, tripDays, tripRange, tripStatus } from '../src/lib/trips';
 import type { Trip } from '../src/data/types';
 import { base64ToBytes } from '../src/lib/base64';
+import { cycleHeadline, cycleInfo, cycleMarks } from '../src/lib/cycle';
+import { checkPeriod } from '../src/data/validate';
 import { dots, specialDays, specialText, sortTimeline } from '../src/lib/milestones';
 import { questionOrder, questionText, quizState } from '../src/lib/quiz';
 import { QUIZ_QUESTIONS } from '../src/lib/quiz-questions';
@@ -435,7 +437,10 @@ describe('Anpassen (persönliche Einstellungen)', () => {
     assert.deepEqual(p.areas.hidden, ['rezepte', 'quiz']);
     assert.deepEqual(visible(p.areas), ['album', 'listen', 'kalender']);
     assert.equal(p.home.order[0], 'shopping');
-    assert.equal(p.home.order.length, 6);
+    assert.equal(p.home.order.length, 7);
+    // Zyklus-Karte ist privat: auch bei bestehenden Einstellungen erst einmal aus
+    assert.ok(p.home.hidden.includes('cycle'));
+    assert.deepEqual(p.kalender, { showBirthdays: true, showCycle: true, cycleInMonth: true });
     assert.equal(p.home.heroPhotoId, null);
     assert.deepEqual(p.look, { mode: 'dark', accent: 'blau' });
     // Listen: mindestens ein Reiter bleibt sichtbar
@@ -612,5 +617,85 @@ describe('Meilensteine', () => {
     assert.equal((await a.listMilestones())[0].title, 'Unsere Hochzeit');
     await a.deleteMilestone(m.id);
     assert.equal((await a.listMilestones()).length, 0);
+  });
+});
+
+describe('Zyklus', () => {
+  const per = (start: string, end: string | null, userId = 'u') => ({ id: start, userId, start, end, createdAt: start });
+
+  test('Vorhersage aus eigenen Einträgen', () => {
+    const now = new Date(2026, 10, 19);
+    const none = cycleInfo([], now);
+    assert.equal(cycleHeadline(none), 'Noch nichts eingetragen');
+    // eine Periode: Standardwerte (28/5)
+    const one = cycleInfo([per('2026-11-10', '2026-11-14')], now);
+    assert.equal(one.learned, false);
+    assert.equal(one.cycleLength, 28);
+    assert.equal(one.daysUntil, 19);
+    assert.equal(cycleHeadline(one), 'Periode in etwa 19 Tagen');
+    assert.equal(one.ovulation!.getDate(), 24);
+    // drei Perioden mit 30 Tagen Abstand, 4 Tage lang
+    const l = [per('2026-08-21', '2026-08-24'), per('2026-09-20', '2026-09-23'), per('2026-10-20', '2026-10-23')];
+    const i = cycleInfo(l, now);
+    assert.equal(i.learned, true);
+    assert.equal(i.cycleLength, 30);
+    assert.equal(i.periodLength, 4);
+    assert.equal(i.daysUntil, 0);
+    assert.equal(cycleHeadline(i), 'Periode heute erwartet');
+    assert.equal(cycleHeadline(cycleInfo(l, new Date(2026, 10, 22))), 'Periode seit 3 Tagen erwartet');
+    // läuft gerade
+    const run = cycleInfo([...l, per('2026-11-18', null)], now);
+    assert.equal(run.ongoingDay, 2);
+    assert.equal(cycleHeadline(run), 'Periode, Tag 2');
+    // unplausible Abstände (z. B. vergessener Monat) zählen nicht
+    assert.equal(cycleInfo([per('2026-05-01', null), per('2026-08-01', null), per('2026-08-29', null)], now).cycleLength, 28);
+  });
+
+  test('Markierungen im Monat', () => {
+    const now = new Date(2026, 10, 19);
+    const m = cycleMarks([per('2026-11-10', '2026-11-14')], now);
+    assert.equal(m.get('2026-11-10'), 'period');
+    assert.equal(m.get('2026-11-14'), 'period');
+    assert.equal(m.get('2026-11-15'), undefined);
+    assert.equal(m.get('2026-12-08'), 'predicted');
+    assert.equal(m.get('2026-11-24'), 'ovulation');
+    assert.equal(m.get('2026-11-20'), 'fertile');
+    assert.equal(cycleMarks([], now).size, 0);
+  });
+
+  test('Eingaben prüfen: kein Datum in der Zukunft, Dauer, keine Überschneidung', () => {
+    const now = new Date(2026, 10, 19);
+    assert.throws(() => checkPeriod({ start: '2026-11-25', end: null }, [], now), /Zukunft/);
+    assert.throws(() => checkPeriod({ start: '2026-11-10', end: '2026-11-09' }, [], now), /vor dem Beginn/);
+    assert.throws(() => checkPeriod({ start: '2026-10-01', end: '2026-10-25' }, [], now), /21 Tage/);
+    assert.throws(() => checkPeriod({ start: '2026-11-12', end: null }, [{ start: '2026-11-10', end: '2026-11-14' }], now), /schon eine Periode/);
+    assert.deepEqual(checkPeriod({ start: '2026-11-15', end: null }, [{ start: '2026-11-10', end: '2026-11-14' }], now), { start: '2026-11-15', end: null });
+  });
+
+  test('Mock-DB: privat, bis die Person selbst teilt; Partner kann nichts ändern', async () => {
+    const db = new MemoryBackend();
+    const a = new MemoryStore(db);
+    const b = new MemoryStore(db);
+    const c = new MemoryStore(db);
+    await login(a, 'z1@example.org');
+    await login(b, 'z2@example.org');
+    await login(c, 'z3@example.org');
+    for (const [s, n] of [[a, 'A'], [b, 'B'], [c, 'C']] as const) await s.saveMyProfile({ displayName: n, color: 'blue' });
+    await a.createCouple();
+    await b.joinCouple(await a.createInvite());
+    await c.createCouple();
+    const p = await b.addCyclePeriod({ start: '2026-10-20', end: '2026-10-24' });
+    assert.equal((await a.listCyclePeriods()).length, 0);
+    assert.equal(await b.getCycleSharing(), false);
+    await b.setCycleSharing(true);
+    assert.equal((await a.listCyclePeriods()).length, 1);
+    assert.equal((await c.listCyclePeriods()).length, 0);
+    await a.updateCyclePeriod(p.id, { start: '2026-10-21', end: null });
+    await a.deleteCyclePeriod(p.id);
+    assert.equal((await b.listCyclePeriods())[0].start, '2026-10-20');
+    await b.setCycleSharing(false);
+    assert.equal((await a.listCyclePeriods()).length, 0);
+    await b.deleteAccount();
+    assert.equal(db.periods.size, 0);
   });
 });
