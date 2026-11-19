@@ -149,6 +149,25 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(null, 'select * from public.notes', /permission denied/);
   });
 
+  test('Rezepte: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
+    const [r] = await as<{ id: string; servings: number; created_by: string }>(A,
+      `insert into public.recipes (couple_id, title, servings, minutes, ingredients, steps) values ($1, 'Lasagne', 4, 60, '500 g Hackfleisch', 'Ofen vorheizen') returning id, servings, created_by`, [couple]);
+    assert.equal(r.created_by, A);
+    await as(B, `update public.recipes set favorite = true, servings = 6 where id = $1`, [r.id]);
+    const [seen] = await as<{ favorite: boolean; servings: number }>(A, 'select * from public.recipes');
+    assert.equal(seen.favorite, true);
+    assert.equal(seen.servings, 6);
+    await fails(A, `insert into public.recipes (couple_id, title) values ($1, '  ')`, /check constraint/, [couple]);
+    await fails(A, `insert into public.recipes (couple_id, title, servings) values ($1, 'X', 0)`, /check constraint/, [couple]);
+    await fails(A, `insert into public.recipes (couple_id, title, minutes) values ($1, 'X', 2000)`, /check constraint/, [couple]);
+    await fails(A, `insert into public.recipes (couple_id, title, steps) values ($1, 'X', $2)`, /check constraint/, [couple, 'x'.repeat(10001)]);
+    await fails(A, `update public.recipes set created_by = $2 where id = $1`, /immutable_column|created_by/, [r.id, B]);
+    assert.equal((await as(C, 'select * from public.recipes')).length, 0);
+    await fails(C, `insert into public.recipes (couple_id, title) values ($1, 'Einbruch')`, /row-level security/, [couple]);
+    assert.equal((await as(C, `delete from public.recipes returning id`)).length, 0);
+    await fails(null, 'select * from public.recipes', /permission denied/);
+  });
+
   test('Geburtstage: Paar teilt sie, Prüfungen greifen, Fremde sehen nichts', async () => {
     await as(A, `insert into public.birthdays (couple_id, name, month, day, year) values ($1, 'Oma Helga', 3, 14, 1941)`, [couple]);
     await as(B, `insert into public.birthdays (couple_id, name, month, day) values ($1, 'Schaltjahr-Kind', 2, 29)`, [couple]);
@@ -199,6 +218,7 @@ describe('Datenbank (strenge Prüfung)', () => {
       (select count(*) from public.couples) + (select count(*) from public.events) +
       (select count(*) from public.shopping_items) + (select count(*) from public.couple_invites) +
       (select count(*) from public.birthdays) + (select count(*) from public.notes) +
+      (select count(*) from public.recipes) +
       (select count(*) from public.profiles where id = '${A}') as n`);
     assert.equal(Number(left.rows[0].n), 0);
   });

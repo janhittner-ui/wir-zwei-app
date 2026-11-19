@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, NoteInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { BirthdayInput, NoteInput, RecipeInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -91,6 +91,28 @@ export function checkNote(n: NoteInput): NoteInput {
   if (body.length > 5000) throw new InputError('Die Notiz darf höchstens 5000 Zeichen haben.');
   if (!['n1', 'n2', 'n3', 'n4'].includes(n.color)) throw new InputError('Unbekannte Farbe.');
   return { title, body, color: n.color };
+}
+
+/** Mehrzeiligen Text aufräumen: Leerzeichen am Zeilenende und leere Zeilen am Anfang/Ende weg. */
+function lines(s: string | null | undefined) {
+  return (s ?? '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').replace(/^\n+|\n+$/g, '');
+}
+
+export function checkRecipe(r: RecipeInput): RecipeInput {
+  const title = clean(r.title);
+  if (!title) throw new InputError('Wie heißt das Rezept?');
+  if (title.length > 120) throw new InputError('Der Name darf höchstens 120 Zeichen haben.');
+  const servings = Number(r.servings);
+  if (!Number.isInteger(servings) || servings < 1 || servings > 99) throw new InputError('Portionen bitte als Zahl von 1 bis 99.');
+  const minutes = r.minutes == null ? null : Number(r.minutes);
+  if (minutes !== null && (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440)) throw new InputError('Die Zeit bitte in Minuten (1 bis 1440).');
+  const ingredients = lines(r.ingredients);
+  if (ingredients.length > 5000) throw new InputError('Die Zutaten dürfen höchstens 5000 Zeichen haben.');
+  const steps = lines(r.steps);
+  if (steps.length > 10000) throw new InputError('Die Zubereitung darf höchstens 10000 Zeichen haben.');
+  const source = clean(r.source) || null;
+  if (source && source.length > 500) throw new InputError('Die Quelle darf höchstens 500 Zeichen haben.');
+  return { title, servings, minutes, ingredients, steps, source };
 }
 
 export function checkShopping(i: ShoppingInput): ShoppingInput {

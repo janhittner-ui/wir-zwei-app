@@ -22,6 +22,7 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Einkauf</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'cart', selected: 'cart.fill' }} />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="rezepte"><NativeTabs.Trigger.Label>Rezepte</NativeTabs.Trigger.Label><NativeTabs.Trigger.Icon sf="fork.knife" /></NativeTabs.Trigger>
       <NativeTabs.Trigger name="notizen">
         <NativeTabs.Trigger.Label>Notizen</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'note.text', selected: 'note.text' }} />

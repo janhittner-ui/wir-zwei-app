@@ -30,3 +30,6 @@ export const IconHeart = ({ color, size = 22 }: P) => (
   </Svg>
 );
 export const IconNote = (p: P) => <S {...p}><Path d="M5 3.5h10l4 4v13H5z" /><Path d="M9 11h6M9 15h6" /></S>;
+export const IconHeartLine = (p: P) => <S {...p}><Path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8.1 3.6 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.6 0 5.7 3.6 4.5 6.8-1.8 4.6-9.3 9.2-9.3 9.2z" /></S>;
+export const IconClock = (p: P) => <S {...p}><Circle cx={12} cy={12} r={8.5} /><Path d="M12 7.5V12l3 2" /></S>;
+export const IconMinus = (p: P) => <S width={2} {...p}><Path d="M5 12h14" /></S>;

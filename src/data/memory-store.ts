@@ -5,10 +5,10 @@
  */
 import type { DataStore, LiveTable, Unsubscribe } from './store';
 import type {
-  Birthday, BirthdayInput, Note, NoteInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
+  Birthday, BirthdayInput, Note, NoteInput, Recipe, RecipeInput, CalendarEvent, Couple, EventInput, PersonColor, Profile, Session, ShoppingInput, ShoppingItem,
 } from './types';
 import {
-  checkBirthday, checkColor, checkNote, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
+  checkBirthday, checkColor, checkNote, checkRecipe, checkCouple, checkDisplayName, checkEmail, checkEvent, checkLoginCode, checkPassword, checkShopping,
   normalizeInviteCode,
 } from './validate';
 
@@ -26,6 +26,7 @@ type EventRow = CalendarEvent & { coupleId: string };
 type ShopRow = ShoppingItem & { coupleId: string };
 type BdRow = Birthday & { coupleId: string };
 type NoteRow = Note & { coupleId: string };
+type RecipeRow = Recipe & { coupleId: string };
 
 export class MemoryBackend {
   users = new Map<string, string>(); // id -> email
@@ -38,6 +39,7 @@ export class MemoryBackend {
   shopping = new Map<string, ShopRow>();
   birthdays = new Map<string, BdRow>();
   notes = new Map<string, NoteRow>();
+  recipes = new Map<string, RecipeRow>();
   /** Nur für Tests: feste Uhrzeit */
   now = () => Date.now();
   /** Der Code, den die "E-Mail" enthalten würde */
@@ -184,6 +186,7 @@ export class MemoryStore implements DataStore {
       for (const [k, v] of this.db.shopping) if (v.coupleId === cid) this.db.shopping.delete(k);
       for (const [k, v] of this.db.birthdays) if (v.coupleId === cid) this.db.birthdays.delete(k);
       for (const [k, v] of this.db.notes) if (v.coupleId === cid) this.db.notes.delete(k);
+      for (const [k, v] of this.db.recipes) if (v.coupleId === cid) this.db.recipes.delete(k);
       for (const [k, v] of this.db.invites) if (v.coupleId === cid) this.db.invites.delete(k);
     } else {
       this.db.emit('couple', cid);
@@ -200,6 +203,7 @@ export class MemoryStore implements DataStore {
     for (const e of this.db.events.values()) if (e.createdBy === me) e.createdBy = null;
     for (const s of this.db.shopping.values()) if (s.createdBy === me) s.createdBy = null;
     for (const b of this.db.birthdays.values()) if (b.createdBy === me) b.createdBy = null;
+    for (const r of this.db.recipes.values()) if (r.createdBy === me) r.createdBy = null;
     for (const n of this.db.notes.values()) {
       if (n.createdBy === me) n.createdBy = null;
       if (n.updatedBy === me) n.updatedBy = null;
@@ -311,6 +315,43 @@ export class MemoryStore implements DataStore {
     if (!n) return;
     this.db.notes.delete(id);
     this.db.emit('notes', n.coupleId);
+  }
+
+  // ---------- Rezepte ----------
+  private ownRecipe(id: string) {
+    const r = this.db.recipes.get(id);
+    return r && r.coupleId === this.coupleId() ? r : null;
+  }
+  async listRecipes() {
+    const cid = this.coupleId();
+    return [...this.db.recipes.values()].filter((r) => r.coupleId === cid)
+      .sort((a, b) => a.title.localeCompare(b.title, 'de')).map(({ coupleId, ...r }) => ({ ...r }));
+  }
+  async addRecipe(input: RecipeInput) {
+    const cid = this.coupleId();
+    const row: RecipeRow = { ...checkRecipe(input), id: uuid(), coupleId: cid, favorite: false, createdBy: this.uid(), updatedAt: this.stamp() };
+    this.db.recipes.set(row.id, row);
+    this.db.emit('recipes', cid);
+    const { coupleId, ...r } = row;
+    return { ...r };
+  }
+  async updateRecipe(id: string, input: RecipeInput) {
+    const r = this.ownRecipe(id);
+    if (!r) return;
+    Object.assign(r, checkRecipe(input), { updatedAt: this.stamp() });
+    this.db.emit('recipes', r.coupleId);
+  }
+  async setRecipeFavorite(id: string, favorite: boolean) {
+    const r = this.ownRecipe(id);
+    if (!r) return;
+    Object.assign(r, { favorite: !!favorite, updatedAt: this.stamp() });
+    this.db.emit('recipes', r.coupleId);
+  }
+  async deleteRecipe(id: string) {
+    const r = this.ownRecipe(id);
+    if (!r) return;
+    this.db.recipes.delete(id);
+    this.db.emit('recipes', r.coupleId);
   }
 
   // ---------- Einkauf ----------

@@ -13,6 +13,7 @@ import { splitQty } from '../src/lib/qty';
 import { birthdayIn, nextBirthday, searchKey, upcomingBirthdays } from '../src/lib/birthdays';
 import { shopEmoji } from '../src/lib/shop-emoji';
 import { VERSES } from '../src/lib/verses';
+import { amountText, formatAmount, formatMinutes, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
 
 async function login(store: MemoryStore, email: string) {
   await store.signUpWithPassword(email, 'geheim123');
@@ -123,6 +124,26 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     assert.equal((await fremd.listNotes()).length, 0);
     await fremd.deleteNote(a.id);
     assert.equal((await jan.listNotes()).length, 2);
+  });
+
+  test('Rezepte: anlegen, Favorit, geprüft, Fremde sehen nichts', async () => {
+    const r = await jan.addRecipe({ title: '  Lasagne ', servings: 4, minutes: 60, ingredients: '500 g Hackfleisch\n\n', steps: '\n1. Ofen an\n', source: '' });
+    assert.equal(r.title, 'Lasagne');
+    assert.equal(r.ingredients, '500 g Hackfleisch');
+    assert.equal(r.steps, '1. Ofen an');
+    assert.equal(r.source, null);
+    await vanessa.addRecipe({ title: 'Apfelkuchen', servings: 12, minutes: null, ingredients: '', steps: '', source: null });
+    await vanessa.setRecipeFavorite(r.id, true);
+    const list = await jan.listRecipes();
+    assert.deepEqual(list.map((x) => x.title), ['Apfelkuchen', 'Lasagne']);
+    assert.equal(list[1].favorite, true);
+    await assert.rejects(() => jan.addRecipe({ title: ' ', servings: 2, minutes: null, ingredients: '', steps: '', source: null }), /heißt/);
+    await assert.rejects(() => jan.addRecipe({ title: 'X', servings: 0, minutes: null, ingredients: '', steps: '', source: null }), /Portionen/);
+    await assert.rejects(() => jan.addRecipe({ title: 'X', servings: 2, minutes: 2000, ingredients: '', steps: '', source: null }), /Minuten/);
+    assert.equal((await fremd.listRecipes()).length, 0);
+    await fremd.deleteRecipe(r.id);
+    await fremd.updateRecipe(r.id, { title: 'gehackt', servings: 2, minutes: null, ingredients: '', steps: '', source: null });
+    assert.equal((await jan.listRecipes()).find((x) => x.id === r.id)?.title, 'Lasagne');
   });
 
   test('Konto löschen: Partner behält Einträge ohne Verweis', async () => {
@@ -238,5 +259,31 @@ describe('Helfer', () => {
     assert.match(friendlyError(new Error('irgendwas')), /schiefgegangen.*irgendwas/);
     assert.match(friendlyError(new Error('Invalid API key')), /Schlüssel/);
     assert.match(friendlyError(new Error('email rate limit exceeded')), /Zu viele/);
+  });
+
+  test('Rezept: Zutaten lesen und umrechnen', () => {
+    const mehl = parseIngredient('200 g Mehl');
+    assert.deepEqual([mehl.amount, mehl.unit, mehl.name], [200, 'g', 'Mehl']);
+    assert.equal(scaleLine(mehl, 1.5), '300 g Mehl');
+    assert.equal(scaleLine(parseIngredient('600 g Mehl'), 2), '1,2 kg Mehl');
+    assert.equal(scaleLine(parseIngredient('1/2 TL Salz'), 2), '1 TL Salz');
+    assert.equal(scaleLine(parseIngredient('1½ l Milch'), 0.5), '¾ l Milch');
+    assert.equal(scaleLine(parseIngredient('1 1/2 Tassen Reis'), 1), '1 1/2 Tassen Reis');
+    assert.equal(scaleLine(parseIngredient('2-3 Zwiebeln'), 2), '4-6 Zwiebeln');
+    assert.equal(scaleLine(parseIngredient('3 Eier'), 0.5), '1½ Eier');
+    assert.equal(scaleLine(parseIngredient('Salz und Pfeffer'), 3), 'Salz und Pfeffer');
+    assert.equal(scaleLine(parseIngredient('1,5 EL Öl'), 2), '3 EL Öl');
+    assert.equal(parseIngredient('Gläser spülen').amount, null);
+    assert.equal(parseIngredient('Für die Soße:').heading, true);
+    assert.equal(parseIngredients('a\n\n b \n').length, 2);
+    assert.equal(amountText(parseIngredient('Prise Salz')), null);
+    assert.deepEqual(toShopping(parseIngredient('400 g Spaghetti'), 0.5), { text: 'Spaghetti', qty: '200 g' });
+    assert.deepEqual(toShopping(parseIngredient('Basilikum')), { text: 'Basilikum', qty: null });
+    assert.equal(formatAmount(0.333), '⅓');
+    assert.equal(formatAmount(2.4), '2,4');
+    assert.equal(formatAmount(12.6), '13');
+    assert.deepEqual(parseSteps('1. Wasser kochen\n\n2) Nudeln rein\n- Abgießen'), ['Wasser kochen', 'Nudeln rein', 'Abgießen']);
+    assert.equal(formatMinutes(75), '1 Std. 15 Min.');
+    assert.equal(formatMinutes(45), '45 Min.');
   });
 });
