@@ -38,10 +38,15 @@ export function Aurora() {
 /** Etwas, das oben in jedem Screen darunter erscheinen soll (z. B. „Zurück“, wenn ein Bereich kein Tab ist). */
 export const ScreenTop = createContext<ReactNode>(null);
 
+/** Höhe der Tab-Leiste mit Abstand; großzügig, auf Seiten ohne Tab-Leiste ist es nur etwas Luft am Ende. */
+const TAB_BAR_SPACE = 96;
+
 export function Screen({ children, scroll = true, padTop = true }: { children: ReactNode; scroll?: boolean; padTop?: boolean }) {
   const insets = useSafeAreaInsets();
   const top = useContext(ScreenTop);
-  const pad = { paddingTop: padTop ? insets.top + 14 : 14, paddingBottom: 32, paddingHorizontal: 16, gap: 18 };
+  // Unten Platz für die schwebende Tab-Leiste (iOS 26, liegt über dem Inhalt) plus Home-Balken,
+  // sonst lässt sich das Ende der Seite (z. B. „Einstellungen“ auf Start) nicht erreichen.
+  const pad = { paddingTop: padTop ? insets.top + 14 : 14, paddingBottom: insets.bottom + TAB_BAR_SPACE, paddingHorizontal: 16, gap: 18 };
   return (
     <View style={{ flex: 1 }}>
       <Aurora />
