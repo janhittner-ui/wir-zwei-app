@@ -20,7 +20,9 @@ const GAP = 2;
 export default function Album() {
   const t = useTheme();
   const { store } = useApp();
-  const { items, setItems, loaded, error } = usePhotos();
+  const { items: all, setItems, loaded, error } = usePhotos();
+  // Fotos von Rezepten und Restaurants gehören nicht ins Album
+  const items = useMemo(() => all.filter((p) => p.album), [all]);
   const urls = usePhotoUrls(items);
   const { width } = useWindowDimensions();
   const [busy, setBusy] = useState<string | null>(null);

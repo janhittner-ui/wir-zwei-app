@@ -11,7 +11,7 @@ import type { Meal } from '@/data/types';
 import { MEALS } from '@/lib/recipe';
 import { fonts, useTheme } from '@/theme';
 import { FormRow } from '@/ui/date-field';
-import { DishPhotoField } from '@/ui/dish-photo';
+import { DishPhotoField, useOwnPhotos } from '@/ui/dish-photo';
 import { IconX } from '@/ui/icons';
 import { Banner, Button, Card, Input, Press, Screen, T } from '@/ui/kit';
 import { Stepper } from '@/ui/stepper';
@@ -22,6 +22,7 @@ export default function RezeptBearbeiten() {
   const { items, loaded } = useRecipes();
   const t = useTheme();
   const existing = id ? items.find((r) => r.id === id) : undefined;
+  const own = useOwnPhotos();
 
   const [title, setTitle] = useState('');
   const [servings, setServings] = useState(2);
@@ -60,6 +61,7 @@ export default function RezeptBearbeiten() {
       const input = { title, servings, minutes: m ? Number(m) : null, ingredients, steps, source, photoId, meals };
       if (existing) await store.updateRecipe(existing.id, input);
       else await store.addRecipe(input);
+      await own.cleanup(existing?.photoId ?? null, photoId);
       close();
     } catch (e) {
       setErr(friendlyError(e));
@@ -77,6 +79,7 @@ export default function RezeptBearbeiten() {
         onPress: async () => {
           try {
             await store.deleteRecipe(existing.id);
+            await own.cleanup(existing.photoId, null);
             goArea('rezepte', {}, 'dismissTo');
           } catch (e) {
             setErr(friendlyError(e));
@@ -120,7 +123,7 @@ export default function RezeptBearbeiten() {
             })}
           </View>
         </View>
-        <DishPhotoField value={photoId} onChange={setPhotoId} caption={title} />
+        <DishPhotoField value={photoId} onChange={setPhotoId} caption={title} title="Foto vom Gericht" onUploaded={own.onUploaded} />
         <Card style={{ paddingVertical: 6, gap: 0 }}>
           <FormRow label="Portionen" first>
             <Stepper value={servings} onChange={setServings} label="Portionen" testID="recipe-servings" />

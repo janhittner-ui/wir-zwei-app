@@ -248,7 +248,11 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
   });
 
   test('Rezepte: Foto vom Gericht und Mahlzeiten', async () => {
-    const p = await jan.addPhoto({ base64: 'A'.repeat(300), width: 800, height: 600, caption: 'Rührei' });
+    const p = await jan.addPhoto({ base64: 'A'.repeat(300), width: 800, height: 600, caption: 'Rührei', album: false });
+    assert.equal(p.album, false);
+    const listed = (await vanessa.listPhotos()).find((x) => x.id === p.id);
+    assert.equal(listed?.album, false); // Partner sieht das Foto (für das Rezept), aber nicht als Album-Foto
+    assert.equal((await jan.addPhoto({ base64: 'A'.repeat(300), width: 10, height: 10 })).album, true);
     const r = await jan.addRecipe({ title: 'Rührei', servings: 2, minutes: 10, ingredients: '', steps: '', source: null, photoId: p.id, meals: ['abend', 'fruehstueck', 'abend'] });
     assert.equal(r.photoId, p.id);
     assert.deepEqual(r.meals, ['fruehstueck', 'abend']); // feste Reihenfolge, doppelt raus

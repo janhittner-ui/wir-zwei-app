@@ -11,7 +11,8 @@ export function AlbumPicker({ value, onChange, noneLabel = 'Kein Foto', testID =
   value: string | null; onChange: (id: string | null) => void; noneLabel?: string; testID?: string;
 }) {
   const t = useTheme();
-  const { items, loaded } = usePhotos();
+  const { items: all, loaded } = usePhotos();
+  const items = all.filter((p) => p.album);
   const shown = items.slice(0, 40);
   const urls = usePhotoUrls(shown);
   const tile = { width: 72, height: 72, borderRadius: 12, overflow: 'hidden' as const, borderWidth: 3 };
