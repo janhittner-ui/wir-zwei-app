@@ -20,7 +20,7 @@ const fail = (code: string): never => {
   throw new Error(code);
 };
 
-interface CoupleRow { id: string; togetherSince: string | null; names: string | null }
+interface CoupleRow { id: string; togetherSince: string | null; names: string | null; fullAccess?: boolean }
 interface Invite { code: string; coupleId: string; expiresAt: number }
 type EventRow = CalendarEvent & { coupleId: string };
 type ShopRow = ShoppingItem & { coupleId: string };
@@ -74,6 +74,16 @@ export class MemoryBackend {
     this.listeners.add(l);
     return () => this.listeners.delete(l);
   }
+  /** Wie admin.vollzugang() im Supabase SQL Editor: Vollzugang für das Paar dieser E-Mail an/aus. */
+  setFullAccess(email: string, on: boolean): boolean {
+    const uid = [...this.users].find(([, e]) => e.toLowerCase() === email.trim().toLowerCase())?.[0];
+    const cid = uid ? this.members.get(uid) : undefined;
+    if (!cid) return false;
+    this.couples.get(cid)!.fullAccess = on;
+    this.emit('couple', cid);
+    return true;
+  }
+
   emit(table: Table, coupleId: string) {
     for (const l of [...this.listeners]) if (l.table === table && l.coupleId() === coupleId) l.cb();
   }
@@ -175,6 +185,7 @@ export class MemoryStore implements DataStore {
       names: c.names,
       members: this.db.membersOf(cid).map((u) => this.db.profiles.get(u)).filter((p): p is Profile => !!p).map((p) => ({ ...p })),
       inviteCode: inv?.code ?? null,
+      fullAccess: c.fullAccess === true,
     };
   }
   async createCouple() {

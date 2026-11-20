@@ -8,6 +8,7 @@ import { AppState } from 'react-native';
 import { createStore } from './index';
 import type { DataStore } from './store';
 import type { Birthday, CalendarEvent, Gift, QuizAnswer, Milestone, DateIdea, Restaurant, CyclePeriod, Media, Note, Photo, Recipe, Trip, TripItem, Couple, Profile, Session, ShoppingItem } from './types';
+import { canUse, hasPremium, photoLimit, type PremiumFeature } from '../lib/premium';
 
 type Status = 'booting' | 'signedOut' | 'loading' | 'needsProfile' | 'needsCouple' | 'ready' | 'error';
 
@@ -96,6 +97,17 @@ export function useApp(): AppData {
   const v = useContext(Ctx);
   if (!v) throw new Error('useApp außerhalb von DataProvider');
   return v;
+}
+
+/** Vollzugang/Abo des eigenen Paares. Aktualisiert sich live, wenn Jan den Schalter in Supabase umlegt. */
+export function usePremium() {
+  const { couple } = useApp();
+  return useMemo(() => ({
+    hasPremium: hasPremium(couple),
+    fullAccess: couple?.fullAccess === true,
+    canUse: (f: PremiumFeature) => canUse(f, couple),
+    photoLimit: photoLimit(couple),
+  }), [couple]);
 }
 
 /** Lädt eine Liste, hört auf Live-Änderungen und lädt beim Zurückkehren in die App neu. */

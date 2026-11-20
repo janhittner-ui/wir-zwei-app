@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 
 import { MemoryBackend, MemoryStore } from '../src/data/memory-store';
+import { ABO_AKTIV, canUse, FREE_PHOTO_LIMIT, hasPremium, photoLimit, PREMIUM_FEATURES } from '../src/lib/premium';
 import { friendlyError } from '../src/data/errors';
 import { checkEvent, normalizeInviteCode, normalizeTime } from '../src/data/validate';
 import { dayVerse, fromGerman, monthGrid, together, toGerman } from '../src/lib/dates';
@@ -895,5 +896,38 @@ describe('Restaurants', () => {
     assert.equal((await b.listRestaurants())[0].ratings.length, 0);
     await a.deleteRestaurant(r.id);
     assert.equal((await b.listRestaurants()).length, 0);
+  });
+});
+
+describe('Vollzugang (Abo-Grundlage)', () => {
+  test('Ohne Abo-Technik ist alles frei, Vollzugang wird erkannt', async () => {
+    const db = new MemoryBackend();
+    const a = new MemoryStore(db);
+    const b = new MemoryStore(db);
+    await login(a, 'familie@example.org');
+    await login(b, 'familie2@example.org');
+    await a.createCouple();
+    await b.joinCouple(await a.createInvite());
+    assert.equal((await a.getMyCouple())?.fullAccess, false);
+    assert.equal(db.setFullAccess('FAMILIE2@example.org ', true), true);
+    assert.equal((await a.getMyCouple())?.fullAccess, true);
+    assert.equal(db.setFullAccess('niemand@example.org', true), false);
+  });
+
+  test('canUse / hasPremium / photoLimit', () => {
+    const frei = { fullAccess: false };
+    const voll = { fullAccess: true };
+    // Version 1: Abo aus → nichts gesperrt
+    assert.equal(ABO_AKTIV, false);
+    for (const f of PREMIUM_FEATURES) assert.equal(canUse(f, frei), true);
+    assert.equal(photoLimit(frei), null);
+    // Später mit Abo: ohne Vollzugang gesperrt, mit Vollzugang frei
+    assert.equal(canUse('quiz', frei, true), false);
+    assert.equal(canUse('quiz', voll, true), true);
+    assert.equal(canUse('quiz', null, true), false);
+    assert.equal(photoLimit(frei, true), FREE_PHOTO_LIMIT);
+    assert.equal(photoLimit(voll, true), null);
+    assert.equal(hasPremium(voll), true);
+    assert.equal(hasPremium(frei), false);
   });
 });

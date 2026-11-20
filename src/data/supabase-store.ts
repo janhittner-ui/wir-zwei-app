@@ -203,7 +203,7 @@ export class SupabaseStore implements DataStore {
     const id = must(await this.sb.rpc('my_couple_id')) as string | null;
     this.coupleCache = id;
     if (!id) return null;
-    const c = one(await this.sb.from('couples').select('id, together_since, names').eq('id', id).single());
+    const c = one(await this.sb.from('couples').select('id, together_since, names, full_access').eq('id', id).single());
     // Mitglieder und Einladung sind Zusatzinfos: ein Fehler hier darf den Rest nicht blockieren.
     let members: Profile[] = [];
     let inviteCode: string | null = null;
@@ -220,7 +220,7 @@ export class SupabaseStore implements DataStore {
     } catch (e) {
       console.warn('Einladung konnte nicht geladen werden', e);
     }
-    return { id: c.id, togetherSince: c.together_since, names: c.names, members, inviteCode };
+    return { id: c.id, togetherSince: c.together_since, names: c.names, members, inviteCode, fullAccess: c.full_access === true };
   }
   async createCouple() {
     this.coupleCache = must(await this.sb.rpc('create_couple')) as string;

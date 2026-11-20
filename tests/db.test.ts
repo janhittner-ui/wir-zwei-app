@@ -305,6 +305,29 @@ describe('Datenbank (strenge Prüfung)', () => {
     assert.equal((await as(C, 'select * from public.couples')).length, 0);
   });
 
+  test('Vollzugang: App liest ihn, Nutzer können ihn nicht setzen, nur Admin per SQL', async () => {
+    const [c0] = await as<{ full_access: boolean }>(B, 'select full_access from public.couples where id = $1', [couple]);
+    assert.equal(c0.full_access, false);
+    await fails(A, `update public.couples set full_access = true where id = $1`, /permission denied/, [couple]);
+    await fails(B, `update public.couples set full_access = true where id = $1`, /permission denied/, [couple]);
+    await fails(A, `select admin.vollzugang('a@example.org', true)`, /permission denied/);
+    await fails(null, `select admin.vollzugang('a@example.org', true)`, /permission denied/);
+    await fails(A, 'select * from admin.vollzugang_liste()', /permission denied/);
+    // Admin (Datenbank-Besitzer, wie im Supabase SQL Editor)
+    const on = (await db.query<{ r: string }>(`select admin.vollzugang(' A@Example.org ', true) as r`)).rows[0].r;
+    assert.match(on, /Vollzugang AN/);
+    assert.equal((await as<{ full_access: boolean }>(B, 'select full_access from public.couples where id = $1', [couple]))[0].full_access, true);
+    const list = (await db.query<{ mitglieder: string }>('select * from admin.vollzugang_liste()')).rows;
+    assert.equal(list.length, 1);
+    assert.equal(list[0].mitglieder, 'a@example.org, b@example.org');
+    assert.match((await db.query<{ r: string }>(`select admin.vollzugang('c@example.org', true) as r`)).rows[0].r, /kein Paar/);
+    assert.match((await db.query<{ r: string }>(`select admin.vollzugang('gibtsnicht@example.org', true) as r`)).rows[0].r, /Kein Konto/);
+    // "Zusammen seit" ändern darf weiterhin, ohne den Vollzugang anzufassen
+    await as(B, `update public.couples set names = 'Jan & Vanessa' where id = $1`, [couple]);
+    assert.match((await db.query<{ r: string }>(`select admin.vollzugang('b@example.org', false) as r`)).rows[0].r, /Vollzugang AUS/);
+    assert.equal((await db.query('select * from admin.vollzugang_liste()')).rows.length, 0);
+  });
+
   test('Zyklus: privat bis zum eigenen Schalter, nur Beginn/Ende, nur selbst änderbar', async () => {
     const [p] = await as<{ id: string; user_id: string }>(B, `insert into public.cycle_periods (start_date, end_date) values (current_date - 30, current_date - 26) returning id, user_id`);
     assert.equal(p.user_id, B);
