@@ -157,7 +157,7 @@ export function checkPhoto(p: PhotoUpload): PhotoUpload {
   if (!p.base64 || p.base64.length < 100) throw new InputError('Dieses Bild konnte nicht gelesen werden.');
   // ca. 5 MB Datei (Base64 ist ein Drittel größer) – die App verkleinert vorher deutlich
   if (p.base64.length > 6_900_000) throw new InputError('Das Bild ist zu groß.');
-  return { ...p, caption: checkCaption(p.caption) };
+  return { ...p, caption: checkCaption(p.caption), album: p.album !== false };
 }
 
 export function checkMedia(m: MediaInput): MediaInput {

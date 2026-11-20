@@ -153,7 +153,10 @@ describe('Datenbank (strenge Prüfung)', () => {
   });
 
   test('Rezepte: Foto aus dem eigenen Album und Mahlzeiten', async () => {
-    const [ph] = await as<{ id: string }>(A, `insert into public.photos (couple_id, width, height) values ($1, 800, 600) returning id`, [couple]);
+    const [ph] = await as<{ id: string; album: boolean }>(A, `insert into public.photos (couple_id, width, height, album) values ($1, 800, 600, false) returning id, album`, [couple]);
+    assert.equal(ph.album, false);
+    // album darf nachträglich nicht verändert werden (nur die Bildunterschrift)
+    await fails(A, `update public.photos set album = true where id = $1`, /permission denied/, [ph.id]);
     const [r] = await as<{ id: string; meals: string[] }>(A,
       `insert into public.recipes (couple_id, title, photo_id, meals) values ($1, 'Rührei', $2, '{fruehstueck}') returning id, meals`, [couple, ph.id]);
     assert.deepEqual(r.meals, ['fruehstueck']);

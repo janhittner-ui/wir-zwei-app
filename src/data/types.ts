@@ -119,6 +119,8 @@ export interface Photo {
   caption: string | null;
   width: number;
   height: number;
+  /** false = Foto gehört zu einem Rezept oder Restaurant und erscheint nicht im Album */
+  album: boolean;
   createdBy: string | null;
   /** ISO-Zeitpunkt */
   createdAt: string;
@@ -129,6 +131,8 @@ export interface PhotoUpload {
   width: number;
   height: number;
   caption?: string | null;
+  /** false = nicht im Album zeigen (Foto von Rezept oder Restaurant); Standard true */
+  album?: boolean;
 }
 
 export type MediaKind = 'film' | 'serie';

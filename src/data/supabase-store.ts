@@ -63,9 +63,9 @@ const toTripItem = (r: Row): TripItem => ({
 const TRIP_ITEM_COLS = 'id, trip_id, text, done, created_by, created_at';
 const tripRow = (v: TripInput) => ({ title: v.title, start_date: v.startDate, end_date: v.endDate, note: v.note });
 const toPhoto = (r: Row): Photo => ({
-  id: r.id, path: r.path, caption: r.caption, width: r.width, height: r.height, createdBy: r.created_by, createdAt: r.created_at,
+  id: r.id, path: r.path, caption: r.caption, width: r.width, height: r.height, album: r.album ?? true, createdBy: r.created_by, createdAt: r.created_at,
 });
-const PHOTO_COLS = 'id, path, caption, width, height, created_by, created_at';
+const PHOTO_COLS = 'id, path, caption, width, height, album, created_by, created_at';
 const toMedia = (r: Row): Media => ({
   id: r.id, title: r.title, kind: r.kind, platform: r.platform, note: r.note, done: r.done, rating: r.rating,
   doneAt: r.done_at, createdBy: r.created_by, createdAt: r.created_at,
@@ -406,7 +406,7 @@ export class SupabaseStore implements DataStore {
     const v = checkPhoto(p);
     // Erst den Album-Eintrag anlegen (die Datenbank bestimmt den Dateipfad), dann die Datei hochladen.
     const row = toPhoto(one(await this.sb.from('photos')
-      .insert({ caption: v.caption, width: v.width, height: v.height, couple_id: await this.coupleId() }).select(PHOTO_COLS).single()));
+      .insert({ caption: v.caption, width: v.width, height: v.height, album: v.album !== false, couple_id: await this.coupleId() }).select(PHOTO_COLS).single()));
     const { error } = await this.sb.storage.from('photos').upload(row.path, base64ToBytes(v.base64), { contentType: 'image/jpeg', upsert: false });
     if (error) {
       await this.sb.from('photos').delete().eq('id', row.id);

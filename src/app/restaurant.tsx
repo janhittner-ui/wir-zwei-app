@@ -1,6 +1,6 @@
 /**
  * Restaurant anlegen oder bearbeiten: Name, Küche, Ort, Preis, Notiz.
- * Wenn ihr dort wart: Datum, eigene Sterne (die des Partners sieht man daneben) und ein Foto aus dem Album.
+ * Wenn ihr dort wart: Datum, eigene Sterne (die des Partners sieht man daneben) und ein Foto (erscheint nicht im Album).
  * Steht es noch auf „Wollen wir hin“, kommt es mit einem Tipp auf die Date-Liste.
  */
 import { router, useLocalSearchParams } from 'expo-router';
@@ -13,7 +13,7 @@ import { ymd } from '@/lib/dates';
 import { goArea } from '@/lib/nav';
 import { avgStars, CUISINES, dateTitleFor, starsText } from '@/lib/restaurants';
 import { fonts, useTheme } from '@/theme';
-import { AlbumPicker } from '@/ui/album-picker';
+import { DishPhotoField, useOwnPhotos } from '@/ui/dish-photo';
 import { DatePicker, FormRow } from '@/ui/date-field';
 import { IconX } from '@/ui/icons';
 import { Banner, Button, Card, Input, Press, Screen, T } from '@/ui/kit';
@@ -28,6 +28,7 @@ export default function RestaurantScreen() {
   const { items: dates } = useDateIdeas();
   const t = useTheme();
   const existing = id ? items.find((r) => r.id === id) : undefined;
+  const own = useOwnPhotos();
   const me = profile?.id ?? null;
   const partner = couple?.members.find((m) => m.id !== me) ?? null;
 
@@ -72,6 +73,7 @@ export default function RestaurantScreen() {
       if (existing) await store.updateRestaurant(rid, v);
       const mine = existing?.ratings.find((r) => r.userId === me)?.stars ?? null;
       if (visited && stars !== mine) await store.rateRestaurant(rid, stars);
+      await own.cleanup(existing?.photoId ?? null, v.photoId);
       close();
     } catch (e) {
       setErr(friendlyError(e));
@@ -85,6 +87,7 @@ export default function RestaurantScreen() {
     const go = async () => {
       try {
         await store.deleteRestaurant(existing.id);
+        await own.cleanup(existing.photoId, null);
         close();
       } catch (e) {
         setErr(friendlyError(e));
@@ -197,10 +200,7 @@ export default function RestaurantScreen() {
         <Input label="Notiz (optional)" value={note} onChangeText={setNote} multiline maxLength={500} placeholder={visited ? 'Was hat euch geschmeckt? Was lieber nicht?' : 'Wer hat es empfohlen? Reservieren nötig?'} testID="rest-note" />
 
         {visited ? (
-          <View style={{ gap: 8 }}>
-            <T v="label">Foto aus eurem Album (optional)</T>
-            <AlbumPicker value={photoId} onChange={setPhotoId} testID="rest-photo" />
-          </View>
+          <DishPhotoField value={photoId} onChange={setPhotoId} caption={name} title="Foto vom Restaurant" onUploaded={own.onUploaded} />
         ) : null}
 
         {existing && !visited && !existing.visitedOn ? (

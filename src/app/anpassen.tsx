@@ -214,7 +214,8 @@ function Arrow({ dir, disabled, label, onPress, testID }: { dir: -1 | 1; disable
 /** Paar-Bild: ein Foto aus eurem Album als Hintergrund oben auf der Startseite */
 function HeroPicker({ value, onChange }: { value: string | null; onChange: (id: string | null) => void }) {
   const t = useTheme();
-  const { items, loaded } = usePhotos();
+  const { items: all, loaded } = usePhotos();
+  const items = all.filter((p) => p.album);
   const shown = items.slice(0, 30);
   const urls = usePhotoUrls(shown);
   const tile = { width: 72, height: 72, borderRadius: 12, overflow: 'hidden' as const };

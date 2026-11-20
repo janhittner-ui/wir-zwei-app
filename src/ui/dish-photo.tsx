@@ -1,14 +1,17 @@
 /**
- * Foto vom Gericht: großes Bild oder ein Feld „Foto hinzufügen“.
+ * Foto für ein Rezept oder Restaurant: großes Bild oder ein Feld „Foto hinzufügen“.
  * Ein Tipp öffnet das iPhone-Aktionsblatt: aufnehmen, aus Fotos wählen, aus dem Album wählen oder entfernen.
- * Neue Fotos landen (verkleinert) im gemeinsamen Album, das Rezept merkt sich nur, welches es ist.
+ * Neue Fotos werden verkleinert im privaten Speicher abgelegt, erscheinen aber NICHT im Album (album = false).
+ * Damit keine verwaisten Fotos liegen bleiben, räumt useOwnPhotos() nach Speichern, Löschen oder Abbrechen auf.
  */
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Platform, View } from 'react-native';
 
 import { friendlyError } from '@/data/errors';
+import type { DataStore } from '@/data/store';
 import { useApp, usePhotos } from '@/data/provider';
+import type { Photo } from '@/data/types';
 import { pickPhotos, PickError, preparePhoto } from '@/lib/photo-pick';
 import { fonts, useTheme } from '@/theme';
 import { AlbumPicker } from '@/ui/album-picker';
@@ -16,7 +19,38 @@ import { IconPhoto } from '@/ui/icons';
 import { Banner, Button, Press, T } from '@/ui/kit';
 import { usePhotoUrls } from '@/ui/photo-urls';
 
-export function DishPhotoField({ value, onChange, caption }: { value: string | null; onChange: (id: string | null) => void; caption: string }) {
+/**
+ * Merkt sich, welche Fotos in diesem Formular neu hochgeladen wurden.
+ * - Abbrechen: neue Uploads wieder löschen.
+ * - Speichern/Löschen: das vorherige eigene Foto (nicht aus dem Album) und nicht genutzte Uploads löschen.
+ */
+export function useOwnPhotos() {
+  const { store } = useApp();
+  const { items: photos } = usePhotos();
+  const uploaded = useRef(new Set<string>());
+  const done = useRef(false);
+  const storeRef = useRef<DataStore>(store);
+  storeRef.current = store;
+  useEffect(() => () => {
+    if (!done.current) for (const id of uploaded.current) storeRef.current.deletePhoto(id).catch(() => undefined);
+  }, []);
+  const own = (id: string | null, list: Photo[]) => !!id && (uploaded.current.has(id) || list.some((p) => p.id === id && !p.album));
+  return {
+    onUploaded: (id: string) => void uploaded.current.add(id),
+    /** nach erfolgreichem Speichern (keep = jetzt gespeichertes Foto) oder Löschen (keep = null) */
+    cleanup: async (previous: string | null, keep: string | null) => {
+      done.current = true;
+      const drop = new Set(uploaded.current);
+      if (own(previous, photos)) drop.add(previous!);
+      if (keep) drop.delete(keep);
+      for (const id of drop) await store.deletePhoto(id).catch(() => undefined);
+    },
+  };
+}
+
+export function DishPhotoField({ value, onChange, caption, title = 'Foto', onUploaded }: {
+  value: string | null; onChange: (id: string | null) => void; caption: string; title?: string; onUploaded?: (id: string) => void;
+}) {
   const t = useTheme();
   const { store } = useApp();
   const { items, setItems } = usePhotos();
@@ -32,7 +66,8 @@ export function DishPhotoField({ value, onChange, caption }: { value: string | n
       const [asset] = await pickPhotos(source, 1);
       if (!asset) return;
       setBusy(true);
-      const p = await store.addPhoto({ ...(await preparePhoto(asset)), caption: caption.trim().slice(0, 200) || null });
+      const p = await store.addPhoto({ ...(await preparePhoto(asset)), caption: caption.trim().slice(0, 200) || null, album: false });
+      onUploaded?.(p.id);
       setItems((l) => (l.some((x) => x.id === p.id) ? l : [p, ...l]));
       onChange(p.id);
       setAlbum(false);
@@ -47,7 +82,7 @@ export function DishPhotoField({ value, onChange, caption }: { value: string | n
     if (Platform.OS !== 'ios') return void upload('library');
     const options = ['Abbrechen', 'Foto aufnehmen', 'Aus Fotos auswählen', 'Aus eurem Album', ...(value ? ['Foto entfernen'] : [])];
     ActionSheetIOS.showActionSheetWithOptions(
-      { options, cancelButtonIndex: 0, destructiveButtonIndex: value ? 4 : undefined, title: 'Foto vom Gericht' },
+      { options, cancelButtonIndex: 0, destructiveButtonIndex: value ? 4 : undefined, title },
       (i) => {
         if (i === 1) upload('camera');
         else if (i === 2) upload('library');

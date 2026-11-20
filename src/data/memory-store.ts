@@ -493,7 +493,7 @@ export class MemoryStore implements DataStore {
     const cid = this.coupleId();
     const v = checkPhoto(p);
     const id = uuid();
-    const row: PhotoRow = { id, path: `${cid}/${id}.jpg`, caption: v.caption ?? null, width: v.width, height: v.height, coupleId: cid, createdBy: this.uid(), createdAt: this.stamp() };
+    const row: PhotoRow = { id, path: `${cid}/${id}.jpg`, caption: v.caption ?? null, width: v.width, height: v.height, album: v.album !== false, coupleId: cid, createdBy: this.uid(), createdAt: this.stamp() };
     this.db.photos.set(id, row);
     this.db.files.set(row.path, v.base64.startsWith('data:') ? v.base64 : `data:image/jpeg;base64,${v.base64}`);
     this.db.emit('photos', cid);

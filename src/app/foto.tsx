@@ -21,7 +21,12 @@ const DIM = 'rgba(255,255,255,0.7)';
 export default function FotoAnsicht() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { store, couple } = useApp();
-  const { items, setItems, loaded } = usePhotos();
+  const { items: all, setItems, loaded } = usePhotos();
+  // Ein Foto von Rezept oder Restaurant steht für sich; sonst wischt man durchs Album.
+  const items = useMemo(() => {
+    const opened = all.find((p) => p.id === id);
+    return opened && !opened.album ? [opened] : all.filter((p) => p.album);
+  }, [all, id]);
   const urls = usePhotoUrls(items);
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -59,7 +64,7 @@ export default function FotoAnsicht() {
           try {
             await store.deletePhoto(cur.id);
             const rest = items.filter((p) => p.id !== cur.id);
-            setItems(rest);
+            setItems((l) => l.filter((p) => p.id !== cur.id));
             if (!rest.length) close();
             else setIndex((i) => Math.min(i, rest.length - 1));
           } catch (e) {
