@@ -115,7 +115,8 @@ export class MemoryStore implements DataStore {
   async signInWithPassword(email: string, password: string) {
     const e = checkEmail(email);
     const id = [...this.db.users].find(([, m]) => m === e)?.[0];
-    if (!id || this.db.passwords.get(id) !== password) fail('Invalid login credentials');
+    const pw = id ? this.db.passwords.get(id) : undefined;
+    if (!id || (pw !== password && pw !== password.trim())) fail('Invalid login credentials');
     this.setSession({ userId: id!, email: e });
   }
   async sendLoginCode(email: string) {
