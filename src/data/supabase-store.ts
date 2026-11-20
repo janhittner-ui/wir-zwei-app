@@ -47,9 +47,12 @@ const toNote = (r: Row): Note => ({
 });
 const toRecipe = (r: Row): Recipe => ({
   id: r.id, title: r.title, servings: r.servings, minutes: r.minutes, ingredients: r.ingredients, steps: r.steps,
-  source: r.source, favorite: r.favorite, createdBy: r.created_by, updatedAt: r.updated_at,
+  source: r.source, favorite: r.favorite, photoId: r.photo_id ?? null, meals: r.meals ?? [], createdBy: r.created_by, updatedAt: r.updated_at,
 });
-const RECIPE_COLS = 'id, title, servings, minutes, ingredients, steps, source, favorite, created_by, updated_at';
+const RECIPE_COLS = 'id, title, servings, minutes, ingredients, steps, source, favorite, photo_id, meals, created_by, updated_at';
+const recipeRow = (v: RecipeInput) => ({
+  title: v.title, servings: v.servings, minutes: v.minutes, ingredients: v.ingredients, steps: v.steps, source: v.source, photo_id: v.photoId ?? null, meals: v.meals ?? [],
+});
 const toTrip = (r: Row): Trip => ({
   id: r.id, title: r.title, startDate: r.start_date, endDate: r.end_date, note: r.note, createdBy: r.created_by,
 });
@@ -349,10 +352,10 @@ export class SupabaseStore implements DataStore {
     return r.map(toRecipe);
   }
   async addRecipe(input: RecipeInput) {
-    return toRecipe(one(await this.sb.from('recipes').insert({ ...checkRecipe(input), couple_id: await this.coupleId() }).select(RECIPE_COLS).single()));
+    return toRecipe(one(await this.sb.from('recipes').insert({ ...recipeRow(checkRecipe(input)), couple_id: await this.coupleId() }).select(RECIPE_COLS).single()));
   }
   async updateRecipe(id: string, input: RecipeInput) {
-    must(await this.sb.from('recipes').update(checkRecipe(input)).eq('id', id));
+    must(await this.sb.from('recipes').update(recipeRow(checkRecipe(input))).eq('id', id));
   }
   async setRecipeFavorite(id: string, favorite: boolean) {
     must(await this.sb.from('recipes').update({ favorite }).eq('id', id));

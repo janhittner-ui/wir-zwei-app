@@ -3,6 +3,7 @@
  * Eine Zutat pro Zeile, z. B. "200 g Mehl", "1/2 TL Salz", "1½ l Milch", "2-3 Zwiebeln", "Salz".
  * Zeilen mit Doppelpunkt am Ende ("Für die Soße:") sind Zwischenüberschriften.
  */
+import type { Meal } from '@/data/types';
 
 const FRAC: Record<string, number> = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125 };
 const NUM = String.raw`(?:\d+\s+\d+/\d+|\d+/\d+|\d+(?:[.,]\d+)?\s*[½¼¾⅓⅔⅛]?|[½¼¾⅓⅔⅛])`;
@@ -107,4 +108,16 @@ export function formatMinutes(m: number): string {
   const h = Math.floor(m / 60);
   const r = m % 60;
   return r ? `${h} Std. ${r} Min.` : `${h} Std.`;
+}
+
+/** Mahlzeiten in fester Reihenfolge, mit Namen für Auswahl und Filter */
+export const MEALS: { key: Meal; label: string; short: string }[] = [
+  { key: 'fruehstueck', label: 'Frühstück', short: 'Frühstück' },
+  { key: 'mittag', label: 'Mittagessen', short: 'Mittag' },
+  { key: 'abend', label: 'Abendessen', short: 'Abend' },
+];
+
+/** ["mittag", "abend"] → "Mittagessen · Abendessen" */
+export function mealsText(meals: Meal[]): string {
+  return MEALS.filter((m) => meals.includes(m.key)).map((m) => m.label).join(' · ');
 }

@@ -1,16 +1,18 @@
-/** Ein Rezept ansehen: Portionen umrechnen, Zutaten auf die Einkaufsliste, Kochmodus starten. */
+/** Ein Rezept ansehen: Foto, Portionen umrechnen, Zutaten auf die Einkaufsliste, Kochmodus starten. */
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Text, View } from 'react-native';
 
 import { friendlyError } from '@/data/errors';
-import { useApp, useRecipes } from '@/data/provider';
+import { useApp, usePhotos, useRecipes } from '@/data/provider';
 import { searchKey } from '@/lib/birthdays';
-import { formatMinutes, parseIngredients, parseSteps, scaleLine, toShopping } from '@/lib/recipe';
+import { formatMinutes, mealsText, parseIngredients, parseSteps, scaleLine, toShopping } from '@/lib/recipe';
 import { goArea } from '@/lib/nav';
 import { fonts, useTheme } from '@/theme';
 import { IconCart, IconClock, IconHeart, IconHeartLine, IconLeft, IconPencil } from '@/ui/icons';
 import { Banner, Button, Card, CardHead, Press, Screen, T } from '@/ui/kit';
+import { usePhotoUrls } from '@/ui/photo-urls';
 import { Stepper } from '@/ui/stepper';
 
 export default function RezeptAnsicht() {
@@ -19,6 +21,9 @@ export default function RezeptAnsicht() {
   const { items, loaded, setItems } = useRecipes();
   const t = useTheme();
   const r = items.find((x) => x.id === id);
+  const { items: photos } = usePhotos();
+  const photo = r?.photoId ? photos.find((p) => p.id === r.photoId) : undefined;
+  const photoUrl = usePhotoUrls(photo ? [photo] : [])[photo?.id ?? ''];
   const [servings, setServings] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ text: string; warn?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -94,12 +99,18 @@ export default function RezeptAnsicht() {
         </View>
       </View>
 
+      {photo ? (
+        <Press onPress={() => router.push({ pathname: '/foto', params: { id: photo.id } })} scale={0.99} accessibilityRole="imagebutton" accessibilityLabel={`Foto: ${r.title}`} testID="recipe-hero"
+          style={{ aspectRatio: 4 / 3, borderRadius: 16, overflow: 'hidden', backgroundColor: t.surface2 }}>
+          {photoUrl ? <Image source={{ uri: photoUrl, cacheKey: photo.id }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={150} recyclingKey={photo.id} /> : null}
+        </Press>
+      ) : null}
       <View style={{ gap: 6 }}>
         <T v="display" accessibilityRole="header">{r.title}</T>
-        {r.minutes ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <IconClock color={t.muted} size={15} />
-            <T v="muted">{formatMinutes(r.minutes)}</T>
+        {r.minutes || r.meals.length ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+            {r.minutes ? <IconClock color={t.muted} size={15} /> : null}
+            <T v="muted">{[r.minutes ? formatMinutes(r.minutes) : null, r.meals.length ? mealsText(r.meals) : null].filter(Boolean).join(' · ')}</T>
           </View>
         ) : null}
       </View>

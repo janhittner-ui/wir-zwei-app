@@ -384,11 +384,13 @@ export class MemoryStore implements DataStore {
   async listRecipes() {
     const cid = this.coupleId();
     return [...this.db.recipes.values()].filter((r) => r.coupleId === cid)
-      .sort((a, b) => a.title.localeCompare(b.title, 'de')).map(({ coupleId, ...r }) => ({ ...r }));
+      .sort((a, b) => a.title.localeCompare(b.title, 'de')).map(({ coupleId, ...r }) => ({ ...r, meals: [...r.meals] }));
   }
   async addRecipe(input: RecipeInput) {
     const cid = this.coupleId();
-    const row: RecipeRow = { ...checkRecipe(input), id: uuid(), coupleId: cid, favorite: false, createdBy: this.uid(), updatedAt: this.stamp() };
+    const v = checkRecipe(input);
+    if (v.photoId && this.db.photos.get(v.photoId)?.coupleId !== cid) fail('recipe_photo_invalid');
+    const row: RecipeRow = { ...v, photoId: v.photoId ?? null, meals: v.meals ?? [], id: uuid(), coupleId: cid, favorite: false, createdBy: this.uid(), updatedAt: this.stamp() };
     this.db.recipes.set(row.id, row);
     this.db.emit('recipes', cid);
     const { coupleId, ...r } = row;
@@ -397,7 +399,9 @@ export class MemoryStore implements DataStore {
   async updateRecipe(id: string, input: RecipeInput) {
     const r = this.ownRecipe(id);
     if (!r) return;
-    Object.assign(r, checkRecipe(input), { updatedAt: this.stamp() });
+    const v = checkRecipe(input);
+    if (v.photoId && v.photoId !== r.photoId && this.db.photos.get(v.photoId)?.coupleId !== r.coupleId) fail('recipe_photo_invalid');
+    Object.assign(r, v, { updatedAt: this.stamp() });
     this.db.emit('recipes', r.coupleId);
   }
   async setRecipeFavorite(id: string, favorite: boolean) {
@@ -510,7 +514,9 @@ export class MemoryStore implements DataStore {
     for (const m of this.db.milestones.values()) if (m.photoId === id) m.photoId = null;
     for (const d of this.db.dates.values()) if (d.photoId === id) d.photoId = null;
     for (const d of this.db.restaurants.values()) if (d.photoId === id) d.photoId = null;
+    for (const d of this.db.recipes.values()) if (d.photoId === id) d.photoId = null;
     this.db.emit('photos', r.coupleId);
+    this.db.emit('recipes', r.coupleId);
     this.db.emit('milestones', r.coupleId);
     this.db.emit('dates', r.coupleId);
     this.db.emit('restaurants', r.coupleId);

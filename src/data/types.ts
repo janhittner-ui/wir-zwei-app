@@ -81,11 +81,16 @@ export interface Recipe {
   /** Woher das Rezept stammt (Link oder Buch), optional */
   source: string | null;
   favorite: boolean;
+  /** Foto vom Gericht (liegt im Album), optional */
+  photoId: string | null;
+  /** Passende Mahlzeiten; leer = keine Angabe */
+  meals: Meal[];
   createdBy: string | null;
   /** ISO-Zeitpunkt */
   updatedAt: string;
 }
-export type RecipeInput = Pick<Recipe, 'title' | 'servings' | 'minutes' | 'ingredients' | 'steps' | 'source'>;
+export type Meal = 'fruehstueck' | 'mittag' | 'abend';
+export type RecipeInput = Pick<Recipe, 'title' | 'servings' | 'minutes' | 'ingredients' | 'steps' | 'source'> & Partial<Pick<Recipe, 'photoId' | 'meals'>>;
 
 /** Reise: ohne Datum ein Wunschziel, mit Datum geplant. */
 export interface Trip {

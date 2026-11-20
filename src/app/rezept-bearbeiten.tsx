@@ -7,8 +7,11 @@ import { friendlyError } from '@/data/errors';
 import { useApp, useRecipes } from '@/data/provider';
 import { InputError } from '@/data/validate';
 import { goArea } from '@/lib/nav';
-import { useTheme } from '@/theme';
+import type { Meal } from '@/data/types';
+import { MEALS } from '@/lib/recipe';
+import { fonts, useTheme } from '@/theme';
 import { FormRow } from '@/ui/date-field';
+import { DishPhotoField } from '@/ui/dish-photo';
 import { IconX } from '@/ui/icons';
 import { Banner, Button, Card, Input, Press, Screen, T } from '@/ui/kit';
 import { Stepper } from '@/ui/stepper';
@@ -26,6 +29,8 @@ export default function RezeptBearbeiten() {
   const [ingredients, setIngredients] = useState('');
   const [steps, setSteps] = useState('');
   const [source, setSource] = useState('');
+  const [photoId, setPhotoId] = useState<string | null>(null);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [filled, setFilled] = useState(false);
@@ -38,6 +43,8 @@ export default function RezeptBearbeiten() {
       setIngredients(existing.ingredients);
       setSteps(existing.steps);
       setSource(existing.source ?? '');
+      setPhotoId(existing.photoId);
+      setMeals(existing.meals);
       setFilled(true);
     }
   }, [existing, filled]);
@@ -50,7 +57,7 @@ export default function RezeptBearbeiten() {
     try {
       const m = minutes.trim();
       if (m && !/^\d+$/.test(m)) throw new InputError('Die Zeit bitte nur als Zahl in Minuten, z. B. 45.');
-      const input = { title, servings, minutes: m ? Number(m) : null, ingredients, steps, source };
+      const input = { title, servings, minutes: m ? Number(m) : null, ingredients, steps, source, photoId, meals };
       if (existing) await store.updateRecipe(existing.id, input);
       else await store.addRecipe(input);
       close();
@@ -98,6 +105,22 @@ export default function RezeptBearbeiten() {
           </Press>
         </View>
         <Input label="Name" value={title} onChangeText={setTitle} maxLength={120} placeholder="z. B. Omas Lasagne" autoFocus={!existing} testID="recipe-title" />
+        <View style={{ gap: 8 }}>
+          <T v="label">Mahlzeit (optional)</T>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {MEALS.map((m) => {
+              const on = meals.includes(m.key);
+              return (
+                <Press key={m.key} onPress={() => setMeals((l) => (on ? l.filter((x) => x !== m.key) : [...l, m.key]))} scale={0.94}
+                  accessibilityRole="checkbox" accessibilityState={{ checked: on }} accessibilityLabel={m.label} testID={`recipe-meal-${m.key}`}
+                  style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 12, backgroundColor: on ? t.blue : t.surface2 }}>
+                  <T style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: on ? t.onAccent : t.ink }}>{m.short}</T>
+                </Press>
+              );
+            })}
+          </View>
+        </View>
+        <DishPhotoField value={photoId} onChange={setPhotoId} caption={title} />
         <Card style={{ paddingVertical: 6, gap: 0 }}>
           <FormRow label="Portionen" first>
             <Stepper value={servings} onChange={setServings} label="Portionen" testID="recipe-servings" />

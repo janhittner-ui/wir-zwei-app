@@ -152,6 +152,29 @@ describe('Datenbank (strenge Prüfung)', () => {
     await fails(null, 'select * from public.recipes', /permission denied/);
   });
 
+  test('Rezepte: Foto aus dem eigenen Album und Mahlzeiten', async () => {
+    const [ph] = await as<{ id: string }>(A, `insert into public.photos (couple_id, width, height) values ($1, 800, 600) returning id`, [couple]);
+    const [r] = await as<{ id: string; meals: string[] }>(A,
+      `insert into public.recipes (couple_id, title, photo_id, meals) values ($1, 'Rührei', $2, '{fruehstueck}') returning id, meals`, [couple, ph.id]);
+    assert.deepEqual(r.meals, ['fruehstueck']);
+    await as(B, `update public.recipes set meals = '{mittag,abend}' where id = $1`, [r.id]);
+    await fails(A, `update public.recipes set meals = '{brunch}' where id = $1`, /check constraint/, [r.id]);
+    await fails(A, `update public.recipes set photo_id = gen_random_uuid() where id = $1`, /recipe_photo_invalid|foreign key/, [r.id]);
+    // Foto eines fremden Paares geht nicht
+    const [own] = await as<{ c: string }>(C, 'select public.my_couple_id() as c');
+    if (own.c) {
+      const [foreign] = await as<{ id: string }>(C, `insert into public.photos (couple_id, width, height) values ($1, 800, 600) returning id`, [own.c]);
+      await fails(A, `update public.recipes set photo_id = $2 where id = $1`, /recipe_photo_invalid/, [r.id, foreign.id]);
+      await as(C, `delete from public.photos where id = $1`, [foreign.id]);
+    }
+    // Foto im Album löschen: Rezept bleibt, nur ohne Foto
+    await as(A, `delete from public.photos where id = $1`, [ph.id]);
+    const [after] = await as<{ photo_id: string | null; meals: string[] }>(A, `select photo_id, meals from public.recipes where id = $1`, [r.id]);
+    assert.equal(after.photo_id, null);
+    assert.deepEqual(after.meals, ['mittag', 'abend']);
+    await as(A, `delete from public.recipes where id = $1`, [r.id]);
+  });
+
   test('Reisen + Packliste: Paar teilt sie, Daten geprüft, nichts landet bei fremden Reisen', async () => {
     const [wish] = await as<{ id: string }>(A, `insert into public.trips (couple_id, title) values ($1, 'Lofoten') returning id`, [couple]);
     const [trip] = await as<{ id: string }>(B, `insert into public.trips (couple_id, title, start_date, end_date) values ($1, 'Toskana', '2027-06-01', '2027-06-14') returning id`, [couple]);
