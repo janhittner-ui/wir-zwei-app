@@ -111,6 +111,7 @@ export default function Einstellungen() {
           ) : (
             <T v="muted">Dein Schatz ist noch nicht dabei. Den Einladungscode findest du auf der Startseite.</T>
           )}
+          {couple?.fullAccess ? <T v="small" testID="full-access">Vollzugang: Alle Funktionen sind für euch dauerhaft frei.</T> : null}
           <Button kind="link" title="Paar verlassen" onPress={leave} busy={busy === 'leave'} />
         </Card>
 

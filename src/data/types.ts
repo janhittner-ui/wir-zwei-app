@@ -16,6 +16,8 @@ export interface Couple {
   members: Profile[];
   /** Offener Einladungscode, falls der Partner noch fehlt */
   inviteCode: string | null;
+  /** Vollzugang: von Jan (Admin) in Supabase freigeschaltet, alles dauerhaft gratis. Nur lesbar. */
+  fullAccess: boolean;
 }
 
 export interface CalendarEvent {
