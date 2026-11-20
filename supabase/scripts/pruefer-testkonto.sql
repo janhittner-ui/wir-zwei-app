@@ -112,19 +112,19 @@ begin
     (c, 'Putzplan', E'Bad: Jonas\nKüche: Lea\nStaubsaugen: abwechselnd', 'n4');
 
   -- Rezepte
-  insert into public.recipes (couple_id, title, servings, minutes, ingredients, steps, favorite) values
+  insert into public.recipes (couple_id, title, servings, minutes, ingredients, steps, favorite, meals) values
     (c, 'Spaghetti Bolognese', 4, 45,
      E'400 g Spaghetti\n500 g Hackfleisch\n1 Zwiebel\n2 Zehen Knoblauch\n1 Dose Tomaten\n2 EL Tomatenmark\n1 TL Oregano\nSalz und Pfeffer\nParmesan',
      E'Zwiebel und Knoblauch fein hacken und in Olivenöl anschwitzen.\nHackfleisch dazugeben und krümelig braten.\nTomatenmark kurz mitrösten, dann die Tomaten und Oregano dazugeben.\nAlles 20 Minuten leise köcheln lassen und abschmecken.\nSpaghetti kochen und mit der Soße und Parmesan servieren.',
-     true),
+     true, '{mittag,abend}'),
     (c, 'Ofengemüse mit Feta', 2, 35,
      E'2 Paprika\n1 Zucchini\n1 rote Zwiebel\n200 g Feta\n3 EL Olivenöl\n1 TL Thymian\nSalz',
      E'Ofen auf 200 Grad vorheizen.\nGemüse in Stücke schneiden, mit Öl, Thymian und Salz mischen.\nAuf einem Blech 20 Minuten backen.\nFeta darüberbröseln und weitere 10 Minuten backen.',
-     false),
+     false, '{abend}'),
     (c, 'Pfannkuchen', 2, 20,
      E'250 g Mehl\n500 ml Milch\n3 Eier\n1 Prise Salz\n1 EL Zucker\nButter zum Braten',
      E'Mehl, Milch, Eier, Salz und Zucker zu einem glatten Teig verrühren.\nTeig 10 Minuten ruhen lassen.\nIn einer heißen Pfanne mit etwas Butter dünne Pfannkuchen ausbacken.',
-     true);
+     true, '{fruehstueck,mittag}');
 
   -- Reisen
   insert into public.trips (couple_id, title, start_date, end_date, note)

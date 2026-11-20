@@ -24,7 +24,7 @@ import { dots, specialDays, specialText, sortTimeline } from '../src/lib/milesto
 import { questionOrder, questionText, quizState } from '../src/lib/quiz';
 import { QUIZ_QUESTIONS, QUIZ_TOPICS } from '../src/lib/quiz-questions';
 import { DEFAULT_PREFS, move, normalizePrefs, toggleHidden, visible } from '../src/lib/prefs';
-import { amountText, formatAmount, formatMinutes, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
+import { amountText, formatAmount, formatMinutes, mealsText, parseIngredient, parseIngredients, parseSteps, scaleLine, toShopping } from '../src/lib/recipe';
 
 async function login(store: MemoryStore, email: string) {
   await store.signUpWithPassword(email, 'geheim123');
@@ -245,6 +245,23 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     await fremd.deleteRecipe(r.id);
     await fremd.updateRecipe(r.id, { title: 'gehackt', servings: 2, minutes: null, ingredients: '', steps: '', source: null });
     assert.equal((await jan.listRecipes()).find((x) => x.id === r.id)?.title, 'Lasagne');
+  });
+
+  test('Rezepte: Foto vom Gericht und Mahlzeiten', async () => {
+    const p = await jan.addPhoto({ base64: 'A'.repeat(300), width: 800, height: 600, caption: 'Rührei' });
+    const r = await jan.addRecipe({ title: 'Rührei', servings: 2, minutes: 10, ingredients: '', steps: '', source: null, photoId: p.id, meals: ['abend', 'fruehstueck', 'abend'] });
+    assert.equal(r.photoId, p.id);
+    assert.deepEqual(r.meals, ['fruehstueck', 'abend']); // feste Reihenfolge, doppelt raus
+    const old = await jan.addRecipe({ title: 'Alt', servings: 2, minutes: null, ingredients: '', steps: '', source: null });
+    assert.equal(old.photoId, null);
+    assert.deepEqual(old.meals, []);
+    await assert.rejects(() => jan.addRecipe({ title: 'X', servings: 2, minutes: null, ingredients: '', steps: '', source: null, meals: ['brunch' as never] }), /Mahlzeit/);
+    await assert.rejects(() => fremd.addRecipe({ title: 'X', servings: 2, minutes: null, ingredients: '', steps: '', source: null, photoId: p.id }), /recipe_photo_invalid/);
+    await vanessa.updateRecipe(r.id, { title: 'Rührei', servings: 2, minutes: 10, ingredients: '', steps: '', source: null, photoId: p.id, meals: ['mittag'] });
+    assert.deepEqual((await jan.listRecipes()).find((x) => x.id === r.id)?.meals, ['mittag']);
+    await jan.deletePhoto(p.id);
+    assert.equal((await vanessa.listRecipes()).find((x) => x.id === r.id)?.photoId, null);
+    assert.equal(mealsText(['abend', 'fruehstueck']), 'Frühstück · Abendessen');
   });
 
   test('Konto löschen: Partner behält Einträge ohne Verweis', async () => {

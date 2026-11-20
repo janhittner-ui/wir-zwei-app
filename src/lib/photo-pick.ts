@@ -13,7 +13,7 @@ export const MAX_PER_UPLOAD = 20;
 
 export class PickError extends Error {}
 
-export async function pickPhotos(source: 'library' | 'camera'): Promise<ImagePicker.ImagePickerAsset[]> {
+export async function pickPhotos(source: 'library' | 'camera', limit = MAX_PER_UPLOAD): Promise<ImagePicker.ImagePickerAsset[]> {
   const opts: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, exif: false };
   let res: ImagePicker.ImagePickerResult;
   if (source === 'camera') {
@@ -21,7 +21,7 @@ export async function pickPhotos(source: 'library' | 'camera'): Promise<ImagePic
     if (!perm.granted) throw new PickError('Bitte erlaube den Zugriff auf die Kamera in den iPhone-Einstellungen.');
     res = await ImagePicker.launchCameraAsync(opts);
   } else {
-    res = await ImagePicker.launchImageLibraryAsync({ ...opts, allowsMultipleSelection: true, selectionLimit: MAX_PER_UPLOAD, orderedSelection: true });
+    res = await ImagePicker.launchImageLibraryAsync({ ...opts, allowsMultipleSelection: limit > 1, selectionLimit: limit, orderedSelection: limit > 1 });
   }
   return res.canceled ? [] : res.assets;
 }

@@ -2,7 +2,7 @@
  * Prüfungen, die exakt den Regeln der Datenbank entsprechen (supabase/migrations).
  * Die App prüft vorher, damit Jan & Vanessa eine verständliche Meldung bekommen statt eines Serverfehlers.
  */
-import type { BirthdayInput, DateIdeaInput, RestaurantInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, CyclePeriodInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
+import type { Meal, BirthdayInput, DateIdeaInput, RestaurantInput, GiftInput, MediaInput, MilestoneInput, QuizAnswerInput, CyclePeriodInput, NoteInput, PhotoUpload, RecipeInput, TripInput, EventInput, PersonColor, ShoppingInput } from './types';
 
 export class InputError extends Error {
   constructor(message: string) {
@@ -98,6 +98,8 @@ function lines(s: string | null | undefined) {
   return (s ?? '').split('\n').map((l) => l.replace(/\s+$/, '')).join('\n').replace(/^\n+|\n+$/g, '');
 }
 
+const MEAL_ORDER: Meal[] = ['fruehstueck', 'mittag', 'abend'];
+
 export function checkRecipe(r: RecipeInput): RecipeInput {
   const title = clean(r.title);
   if (!title) throw new InputError('Wie heißt das Rezept?');
@@ -112,7 +114,10 @@ export function checkRecipe(r: RecipeInput): RecipeInput {
   if (steps.length > 10000) throw new InputError('Die Zubereitung darf höchstens 10000 Zeichen haben.');
   const source = clean(r.source) || null;
   if (source && source.length > 500) throw new InputError('Die Quelle darf höchstens 500 Zeichen haben.');
-  return { title, servings, minutes, ingredients, steps, source };
+  const photoId = r.photoId || null;
+  const meals = MEAL_ORDER.filter((m) => (r.meals ?? []).includes(m));
+  if ((r.meals ?? []).some((m) => !MEAL_ORDER.includes(m))) throw new InputError('Diese Mahlzeit gibt es nicht.');
+  return { title, servings, minutes, ingredients, steps, source, photoId, meals };
 }
 
 export function checkTrip(tr: TripInput): TripInput {

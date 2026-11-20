@@ -4,6 +4,7 @@ import { InputError } from './validate';
 const KNOWN: Record<string, string> = {
   gift_for_invalid: 'Ideen kannst du nur für deinen Schatz oder für andere Menschen anlegen.',
   gift_wish_invalid: 'Diesen Wunsch gibt es nicht mehr.',
+  recipe_photo_invalid: 'Dieses Foto gibt es nicht mehr im Album.',
   restaurant_photo_invalid: 'Dieses Foto gibt es nicht mehr im Album.',
   restaurant_mismatch: 'Dieses Restaurant gibt es nicht mehr.',
   restaurant_not_visited: 'Bewerten könnt ihr, sobald ihr dort wart.',
