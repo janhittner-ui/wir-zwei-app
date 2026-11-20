@@ -1,7 +1,7 @@
 /** App-Name an einer Stelle, damit er sich leicht ändern lässt (zusätzlich in app.json → "name"). */
-export const APP_NAME = 'Paarweise';
+export const APP_NAME = 'CoPlanning';
 /** Für das Schriftzug-Logo: erster Teil blau, zweiter Teil rosa. */
-export const APP_NAME_PARTS = ['Paar', 'weise'] as const;
+export const APP_NAME_PARTS = ['Co', 'Planning'] as const;
 
 /**
  * Rechtstexte im Netz (GitHub Pages, Quelle: Ordner website/, veröffentlicht per .github/workflows/webseite.yml).

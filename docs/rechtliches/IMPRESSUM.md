@@ -2,13 +2,13 @@
 
 > **Entwurf, keine Rechtsberatung.** Bitte vor der Veröffentlichung prüfen lassen (z. B. von einer Anwältin, einem Anwalt
 > oder über den Impressum-Generator von e-recht24). Alles in **[eckigen Klammern]** musst du selbst ausfüllen und die
-> Klammern danach löschen. Den App-Namen „Paarweise“ kannst du per Suchen & Ersetzen austauschen.
+> Klammern danach löschen. Den App-Namen „CoPlanning“ kannst du per Suchen & Ersetzen austauschen.
 
 ---
 
 ## Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG)
 
-**Anbieter der App „Paarweise“:**
+**Anbieter der App „CoPlanning“:**
 
 Jan Julius Hittner
 JJ XPress

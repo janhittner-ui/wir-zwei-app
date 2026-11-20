@@ -1,4 +1,4 @@
--- Paarweise: Testkonto für die Apple-Prüfung (App Review)
+-- CoPlanning: Testkonto für die Apple-Prüfung (App Review)
 --
 -- Legt zwei fertig gekoppelte Konten an (Jonas & Lea) und füllt jeden Bereich mit Beispieldaten.
 -- Alle Termine hängen am heutigen Tag, die Daten sehen also immer frisch aus.

@@ -1,6 +1,6 @@
 # App-Store-Texte (Deutsch)
 
-> **Name noch nicht endgültig.** Der Arbeitsname **Paarweise** kommt in diesen Texten nur an den Stellen vor, die mit 🔁 markiert sind. Wenn ihr den Namen ändert, tauscht ihr ihn genau dort aus (Suchen und Ersetzen nach „Paarweise“). Werbetext, Stichwörter, Was-ist-neu und die Screenshot-Überschriften enthalten den Namen absichtlich nicht und bleiben gleich.
+> **Name endgültig (20.11.2026): CoPlanning.** „Paarweise“ war bei Apple schon belegt.
 >
 > Die Zeichenzahlen stehen jeweils dahinter. Apple zählt Leerzeichen und Satzzeichen mit.
 
@@ -8,7 +8,7 @@
 
 ## 1. App-Name (max. 30 Zeichen) 🔁
 
-**Paarweise – Paar-App** (20 Zeichen)
+**CoPlanning – Paar-App** (21 Zeichen)
 
 Hinweis: Der Zusatz „– Paar-App“ ist bewusst drin, weil Apple die Wörter im Namen bei der Suche am stärksten gewichtet. Bei einem anderen Namen den Zusatz behalten, z. B. „NEUER NAME – Paar-App“.
 
@@ -31,7 +31,7 @@ Der Werbetext lässt sich jederzeit ohne neues Update ändern, gut für Aktionen
 ## 4. Beschreibung (max. 4.000 Zeichen) 🔁
 
 ```
-Paarweise ist die App für euren gemeinsamen Alltag. Termine, Einkauf, Rezepte, Fotos und eure schönsten Momente liegen an einem Ort und sind sofort auf beiden iPhones aktuell. Schlicht, übersichtlich und auf Deutsch.
+Die App für euren gemeinsamen Alltag zu zweit. Termine, Einkauf, Rezepte, Fotos und eure schönsten Momente liegen an einem Ort und sind sofort auf beiden iPhones aktuell. Schlicht, übersichtlich und auf Deutsch.
 
 So funktioniert's: Einer von euch legt das Paar an, der andere tritt mit einem Einladungscode bei. Fertig. Ab dann seht ihr beide dasselbe, live.
 
@@ -70,41 +70,16 @@ Unter „Anpassen“ wählt jeder für sich, welche Bereiche in der Leiste unten
 DATENSCHUTZ
 Eure Daten liegen auf Servern in der EU (Irland). Keine Werbung, kein Tracking. Nur ihr beide seht eure Einträge. Ihr könnt euer Konto jederzeit in der App löschen.
 
-KOSTENLOS
-Paarweise ist komplett kostenlos, ohne Werbung und ohne versteckte Kosten. 🔁
+Datenschutz: https://janhittner-ui.github.io/wir-zwei-app/datenschutz.html
 
 Hinweis: Der Zyklus-Bereich ist keine Verhütungsmethode und ersetzt keinen ärztlichen Rat.
 ```
 
-Hinweise zur Beschreibung:
-- **Version 1 ist kostenlos.** Das Abo („Paarweise Plus“, 2,99 €/Monat oder 24,99 €/Jahr) kommt erst mit einem späteren Update. Erst dann kommt ein Abschnitt zum Abo mit Preisen und Kündigungshinweis in die Beschreibung, sonst lehnt Apple ab.
-- **Funktionen:** Nur nennen, was beim Einreichen wirklich drin ist.
-
-## 4b. Adressen für App Store Connect
-
-Diese Felder verlangt Apple. Die Seiten kommen aus dem Ordner `website/` und liegen kostenlos auf GitHub Pages.
-
-| Feld in App Store Connect | Adresse |
-|---|---|
-| Datenschutzrichtlinie-URL (Pflicht) | https://janhittner-ui.github.io/wir-zwei-app/datenschutz.html |
-| Support-URL (Pflicht) | https://janhittner-ui.github.io/wir-zwei-app/ |
-| Marketing-URL (freiwillig) | leer lassen |
-
-Nutzungsbedingungen: Für Version 1 gilt Apples Standard-Lizenzvertrag (EULA), dafür muss nichts eingetragen werden. Die eigenen AGB (`docs/rechtliches/AGB.md`) braucht es erst mit dem Abo.
-
-## 4c. App-Datenschutz („Datenschutz-Etiketten“)
-
-In App Store Connect unter „App-Datenschutz“ so ausfüllen. Bei allen: **mit der Identität verknüpft: ja**, **Tracking: nein**, Zweck: **App-Funktionalität**.
-
-| Kategorie | Datentyp |
-|---|---|
-| Kontaktinformationen | E-Mail-Adresse |
-| Kontaktinformationen | Name (der Vorname im Profil) |
-| Gesundheit und Fitness | Gesundheit (nur Zyklus-Einträge) |
-| Benutzerinhalte | Fotos oder Videos |
-| Benutzerinhalte | Andere Benutzerinhalte (Termine, Listen, Notizen, Rezepte und so weiter) |
-
-Alles andere: „Wir erheben keine Daten“ bzw. nicht ankreuzen.
+Vor dem Einreichen noch klären:
+- **Abo-Name:** „CoPlanning Plus“ ist ein Vorschlag 🔁.
+- **Links:** Datenschutzerklärung und Nutzungsbedingungen (AGB) müssen online stehen, z. B. auf der späteren Webseite.
+- **Preise:** Erst eintragen, wenn das Abo in der App wirklich eingebaut ist.
+- **Funktionen:** Nur nennen, was beim Einreichen wirklich drin ist, sonst lehnt Apple ab.
 
 ## 5. Stichwörter (max. 100 Zeichen)
 

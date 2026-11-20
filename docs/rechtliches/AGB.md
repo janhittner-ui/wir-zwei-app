@@ -1,15 +1,15 @@
-# Allgemeine Geschäftsbedingungen und Nutzungsbedingungen für „Paarweise“
+# Allgemeine Geschäftsbedingungen und Nutzungsbedingungen für „CoPlanning“
 
 > **Entwurf, keine Rechtsberatung.** Bitte vor der Veröffentlichung prüfen lassen. Alles in **[eckigen Klammern]**
-> musst du selbst ausfüllen und die Klammern danach löschen. Den App-Namen „Paarweise“ kannst du per Suchen & Ersetzen
+> musst du selbst ausfüllen und die Klammern danach löschen. Den App-Namen „CoPlanning“ kannst du per Suchen & Ersetzen
 > austauschen. Die offenen Rechtsfragen stehen ganz unten unter „Hinweise für dich“.
 
 Stand: [Datum]
 
 ## 1. Geltungsbereich und Anbieter
 
-1.1 Diese Bedingungen gelten für die Nutzung der App „Paarweise“ (im Folgenden „App“) und aller darin angebotenen
-Funktionen, auch des kostenpflichtigen Abos „Paarweise Plus“.
+1.1 Diese Bedingungen gelten für die Nutzung der App „CoPlanning“ (im Folgenden „App“) und aller darin angebotenen
+Funktionen, auch des kostenpflichtigen Abos „CoPlanning Plus“.
 
 1.2 Anbieter ist Jan Julius Hittner, JJ XPress, Hoherainstraße 1, 35075 Gladenbach, E-Mail: Janjulius2003@web.de
 (im Folgenden „wir“). Die vollständigen Angaben stehen im Impressum.
@@ -65,7 +65,7 @@ Beispiel Urheberrecht, Persönlichkeitsrechte anderer Personen, strafbare Inhalt
 4.3 Bitte sichert wichtige Fotos und Daten zusätzlich selbst. Wir sichern die Daten technisch, eine Garantie gegen jeden
 Verlust können wir nicht geben.
 
-## 5. Abo „Paarweise Plus“
+## 5. Abo „CoPlanning Plus“
 
 5.1 **Preise:** 2,99 € pro Monat oder 24,99 € pro Jahr. Maßgeblich ist der Preis, der euch vor dem Kauf im App Store
 angezeigt wird. Er enthält die gesetzliche Umsatzsteuer, die Apple abführt.
@@ -84,7 +84,7 @@ automatisch um denselben Zeitraum, wenn es nicht spätestens 24 Stunden vor Abla
 wird innerhalb von 24 Stunden vor Ablauf über eure Apple-ID abgerechnet. [Siehe Hinweis 3 unten.]
 
 5.5 **Kündigung:** Ihr kündigt jederzeit in den Einstellungen eures iPhones: Einstellungen → [euer Name] → Abonnements
-→ Paarweise. Die Kündigung wirkt zum Ende der laufenden Periode. **Das Löschen der App oder des Kontos beendet das Abo
+→ CoPlanning. Die Kündigung wirkt zum Ende der laufenden Periode. **Das Löschen der App oder des Kontos beendet das Abo
 nicht automatisch.** Bitte zusätzlich bei Apple kündigen.
 
 5.6 **Erstattungen** laufen ausschließlich über Apple (https://reportaproblem.apple.com). Wir selbst können keine
@@ -213,7 +213,7 @@ Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht.
 
 - An Jan Julius Hittner, Hoherainstraße 1, 35075 Gladenbach, E-Mail: Janjulius2003@web.de:
 - Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden
-  Dienstleistung: Abo „Paarweise Plus“
+  Dienstleistung: Abo „CoPlanning Plus“
 - Bestellt am (*) / erhalten am (*)
 - Name des/der Verbraucher(s)
 - Anschrift des/der Verbraucher(s)
@@ -227,7 +227,7 @@ Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht.
 ## Hinweise für dich (vor dem Veröffentlichen löschen)
 
 1. **Noch offen:** Datum („Stand“) und Link zur Datenschutzerklärung, sobald die Webseite steht. Vorschläge, die du
-   ändern kannst: Abo-Name „Paarweise Plus“, Mindestalter 16 (wegen DSGVO-Einwilligung), 3 Monate Frist bei Einstellung
+   ändern kannst: Abo-Name „CoPlanning Plus“, Mindestalter 16 (wegen DSGVO-Einwilligung), 3 Monate Frist bei Einstellung
    der kostenlosen Nutzung, 6 Wochen Vorlauf bei AGB-Änderungen.
 2. **Probezeit:** Falls es eine kostenlose Testphase geben soll, muss sie in Abschnitt 5 ergänzt werden.
 3. **Jahresabo und deutsches Recht:** Nach § 309 Nr. 9 BGB dürfen sich Verträge mit Verbrauchern nach der ersten
