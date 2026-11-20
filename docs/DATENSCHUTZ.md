@@ -1,4 +1,4 @@
-# Datenschutz in Paarweise
+# Datenschutz in CoPlanning
 
 Stand: 18.11.2026. Das ist eine technische Übersicht, keine Rechtsberatung. Datenschutzerklärung und Impressum
 schreiben wir vor der Veröffentlichung gesondert (z. B. mit einem Generator wie e-recht24 oder mit anwaltlicher Hilfe).

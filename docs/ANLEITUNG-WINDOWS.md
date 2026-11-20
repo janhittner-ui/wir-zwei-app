@@ -1,6 +1,6 @@
-# Paarweise auf dem iPhone starten (Anleitung für Windows)
+# CoPlanning auf dem iPhone starten (Anleitung für Windows)
 
-Du brauchst etwa 30 Minuten. Am Ende läuft Paarweise auf deinem iPhone, zuerst im Demo-Modus, danach mit echter Datenbank.
+Du brauchst etwa 30 Minuten. Am Ende läuft CoPlanning auf deinem iPhone, zuerst im Demo-Modus, danach mit echter Datenbank.
 
 ---
 
