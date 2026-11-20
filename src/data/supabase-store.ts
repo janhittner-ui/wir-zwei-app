@@ -140,7 +140,14 @@ export class SupabaseStore implements DataStore {
     return data.session ? 'signedIn' : 'confirm';
   }
   async signInWithPassword(email: string, password: string) {
-    const { error } = await this.sb.auth.signInWithPassword({ email: checkEmail(email), password });
+    const e = checkEmail(email);
+    let { error } = await this.sb.auth.signInWithPassword({ email: e, password });
+    // Beim Einfügen aus der Zwischenablage hängt oft ein Leerzeichen oder Zeilenumbruch dran:
+    // dann noch einmal ohne (das Passwort selbst bleibt unverändert gültig).
+    const trimmed = password.trim();
+    if (error && trimmed !== password && /invalid login credentials/i.test(error.message)) {
+      ({ error } = await this.sb.auth.signInWithPassword({ email: e, password: trimmed }));
+    }
     if (error) throw error;
   }
   async sendLoginCode(email: string) {

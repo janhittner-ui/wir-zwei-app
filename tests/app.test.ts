@@ -50,6 +50,7 @@ describe('Paar-Ablauf mit zwei Handys (Mock-DB)', () => {
     await assert.rejects(() => s.signUpWithPassword('pw@example.org', 'nochmal123'), (e) => /schon ein Konto/.test(friendlyError(e)));
     await assert.rejects(() => s.signInWithPassword('pw@example.org', 'falsch123'), (e) => /stimmt nicht/.test(friendlyError(e)));
     await s.signInWithPassword(' pw@example.org ', 'richtig123');
+    await s.signInWithPassword('pw@example.org', 'richtig123\n'); // eingefügt mit Zeilenumbruch
     assert.equal((await s.getSession())?.email, 'pw@example.org');
   });
 
